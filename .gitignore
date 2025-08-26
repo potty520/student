@@ -1,0 +1,62 @@
+# 编译产物
+/backend/target/
+/frontend/dist/
+/frontend/node_modules/
+
+# 日志文件
+*.log
+*.log.*
+/backend/logs/
+
+# IDE文件
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# 环境配置
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 依赖锁定文件（可选）
+# package-lock.json
+# yarn.lock
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Spring Boot
+*.jar
+*.war
+*.ear
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 其他
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
