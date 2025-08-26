@@ -33,6 +33,9 @@ Thumbs.db
 .env.test.local
 .env.production.local
 
+# 后端环境配置
+/backend/.env
+
 # 依赖锁定文件（可选）
 # package-lock.json
 # yarn.lock
