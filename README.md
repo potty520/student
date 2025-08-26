@@ -81,10 +81,15 @@ mysql -u root -p < sql/init.sql
 
 ## 数据库配置
 
-- 服务器: 1.95.34.240:3306
-- 数据库: student_grade_system
-- 用户名: root
-- 密码: Bonc@1997#!
+请在 `backend/src/main/resources/application.yml` 中配置数据库连接信息：
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/student_grade_system
+    username: your_username
+    password: your_password
+```
 
 ## 开发团队
 
