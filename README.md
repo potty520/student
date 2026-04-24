@@ -102,7 +102,7 @@ npm run build
 ## 生产部署（无域名，使用服务器IP）
 
 以下示例基于当前部署信息：
-- 服务器IP：`64.83.43.205`
+- 服务器IP：`your_server_ip`
 - 前端目录：`/opt/student/dist`
 - Nginx端口：`8088`（非默认80/443）
 - 后端端口：`8081`
@@ -154,7 +154,7 @@ sudo journalctl -u student-grade -f
 ```nginx
 server {
     listen 8088;
-    server_name 64.83.43.205;
+    server_name your_server_ip;
 
     root /opt/student/dist;
     index index.html;
@@ -201,7 +201,7 @@ sudo systemctl reload nginx
 ### 6) 访问地址
 
 前端入口：
-`http://64.83.43.205:8088`
+`http://your_server_ip:8088`
 
 ## 数据库配置
 
@@ -215,9 +215,6 @@ spring:
     password: your_password
 ```
 
-## 开发团队
-
-由AI助手Qoder协助开发
 
 ## 许可证
 
