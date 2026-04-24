@@ -5,8 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -16,7 +15,7 @@ import java.util.Set;
  * @version 1.0.0
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = {"permissions"})
 @Entity
 @Table(name = "sys_role")
 public class Role extends BaseEntity {
@@ -24,14 +23,12 @@ public class Role extends BaseEntity {
     /**
      * 角色编码
      */
-    @NotBlank(message = "角色编码不能为空")
-    @Column(name = "role_code", unique = true, nullable = false, length = 50)
+    @Column(name = "role_code", nullable = false, length = 50, unique = true)
     private String roleCode;
 
     /**
      * 角色名称
      */
-    @NotBlank(message = "角色名称不能为空")
     @Column(name = "role_name", nullable = false, length = 50)
     private String roleName;
 
@@ -42,20 +39,7 @@ public class Role extends BaseEntity {
     private String description;
 
     /**
-     * 排序
-     */
-    @Column(name = "sort_order", columnDefinition = "INT DEFAULT 0")
-    private Integer sortOrder = 0;
-
-    /**
-     * 状态 0:禁用 1:启用
-     */
-    @NotNull(message = "状态不能为空")
-    @Column(name = "status", nullable = false, columnDefinition = "TINYINT DEFAULT 1")
-    private Integer status = 1;
-
-    /**
-     * 角色权限关联
+     * 关联的权限集合
      */
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -63,5 +47,5 @@ public class Role extends BaseEntity {
         joinColumns = @JoinColumn(name = "role_id"),
         inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
-    private Set<Permission> permissions;
+    private Set<Permission> permissions = new HashSet<>();
 }

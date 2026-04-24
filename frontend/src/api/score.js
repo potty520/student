@@ -13,9 +13,13 @@ import request from '@/utils/request'
  */
 export function getScoreEntryTemplate(params) {
   return request({
-    url: '/grade/score/template',
+    url: '/scores/list',
     method: 'get',
-    params
+    params: {
+      ...params,
+      page: 1,
+      size: 1000
+    }
   })
 }
 
@@ -25,7 +29,7 @@ export function getScoreEntryTemplate(params) {
  */
 export function batchCreateScores(data) {
   return request({
-    url: '/grade/score/batch',
+    url: '/scores/batch',
     method: 'post',
     data
   })
@@ -38,7 +42,7 @@ export function batchCreateScores(data) {
  */
 export function updateScore(scoreId, data) {
   return request({
-    url: `/grade/score/${scoreId}`,
+    url: `/scores/${scoreId}`,
     method: 'put',
     data
   })
@@ -50,7 +54,7 @@ export function updateScore(scoreId, data) {
  */
 export function deleteScore(scoreId) {
   return request({
-    url: `/grade/score/${scoreId}`,
+    url: `/scores/${scoreId}`,
     method: 'delete'
   })
 }
@@ -61,8 +65,8 @@ export function deleteScore(scoreId) {
  */
 export function calculateRankings(params) {
   return request({
-    url: '/grade/score/calculate-rankings',
-    method: 'post',
+    url: `/scores/ranking/exam/${params.examId}`,
+    method: 'get',
     params
   })
 }
@@ -73,7 +77,7 @@ export function calculateRankings(params) {
  */
 export function generateStatistics(params) {
   return request({
-    url: '/grade/score/statistics',
+    url: '/scores/statistics/grade',
     method: 'get',
     params
   })
@@ -85,8 +89,65 @@ export function generateStatistics(params) {
  */
 export function getStudentScoreDetail(params) {
   return request({
-    url: '/grade/score/student-detail',
+    url: `/scores/report/student/${params.studentId}`,
     method: 'get',
-    params
+    params: {
+      examId: params.examId
+    }
+  })
+}
+
+/**
+ * 获取考试列表
+ */
+export function getExamList(params) {
+  return request({
+    url: '/exams/list',
+    method: 'get',
+    params: {
+      page: 1,
+      size: 100,
+      ...params
+    }
+  })
+}
+
+/**
+ * 获取班级列表
+ */
+export function getClassList() {
+  return request({
+    url: '/basic/class/all',
+    method: 'get'
+  })
+}
+
+/**
+ * 获取课程列表
+ */
+export function getCourseList() {
+  return request({
+    url: '/courses/active',
+    method: 'get'
+  })
+}
+
+/**
+ * 获取班级学生列表
+ */
+export function getStudentsByClass(classId) {
+  return request({
+    url: `/students/class/${classId}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 获取考试课程下的成绩列表
+ */
+export function getScoresByExamAndCourse(examId, courseId) {
+  return request({
+    url: `/scores/exam/${examId}/course/${courseId}`,
+    method: 'get'
   })
 }

@@ -188,6 +188,15 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Plus } from '@element-plus/icons-vue'
+import {
+  getRoleList,
+  createRole,
+  updateRole,
+  deleteRole,
+  updateRoleStatus,
+  assignRolePermissions
+} from '@/api/role'
+import { getPermissionTree } from '@/api/permission'
 
 // 响应式数据
 const loading = ref(false)
@@ -204,75 +213,10 @@ const searchForm = reactive({
 })
 
 // 角色列表
-const roleList = ref([
-  {
-    id: 1,
-    roleName: '超级管理员',
-    roleCode: 'SUPER_ADMIN',
-    description: '系统超级管理员，拥有所有权限',
-    status: 1,
-    createTime: '2024-01-01 10:00:00',
-    permissions: [
-      { id: 1, permissionName: '用户管理' },
-      { id: 2, permissionName: '角色管理' },
-      { id: 3, permissionName: '成绩管理' },
-      { id: 4, permissionName: '基础数据' }
-    ]
-  },
-  {
-    id: 2,
-    roleName: '教师',
-    roleCode: 'TEACHER',
-    description: '教师角色，可以管理成绩和班级信息',
-    status: 1,
-    createTime: '2024-01-02 10:00:00',
-    permissions: [
-      { id: 3, permissionName: '成绩管理' },
-      { id: 4, permissionName: '基础数据' }
-    ]
-  },
-  {
-    id: 3,
-    roleName: '学生',
-    roleCode: 'STUDENT',
-    description: '学生角色，只能查看自己的成绩',
-    status: 1,
-    createTime: '2024-01-03 10:00:00',
-    permissions: [
-      { id: 5, permissionName: '成绩查看' }
-    ]
-  }
-])
+const roleList = ref([])
 
 // 权限树形数据
-const permissionTree = ref([
-  {
-    id: 1,
-    label: '系统管理',
-    children: [
-      { id: 1, label: '用户管理' },
-      { id: 2, label: '角色管理' }
-    ]
-  },
-  {
-    id: 2,
-    label: '成绩管理',
-    children: [
-      { id: 3, label: '成绩录入' },
-      { id: 4, label: '成绩统计' },
-      { id: 5, label: '成绩查看' }
-    ]
-  },
-  {
-    id: 3,
-    label: '基础数据',
-    children: [
-      { id: 6, label: '年级管理' },
-      { id: 7, label: '班级管理' },
-      { id: 8, label: '学科管理' }
-    ]
-  }
-])
+const permissionTree = ref([])
 
 // 树形控件属性
 const treeProps = {
@@ -284,7 +228,7 @@ const treeProps = {
 const pagination = reactive({
   page: 1,
   size: 10,
-  total: 3
+  total: 0
 })
 
 // 角色表单
@@ -317,6 +261,14 @@ const roleRules = {
 
 // 计算属性
 const dialogTitle = computed(() => isEdit.value ? '编辑角色' : '新增角色')
+
+const normalizePermissionNodes = (nodes = []) => {
+  return nodes.map(node => ({
+    ...node,
+    label: node.permissionName,
+    children: normalizePermissionNodes(node.children || [])
+  }))
+}
 
 // 方法
 const handleSearch = () => {
@@ -369,9 +321,10 @@ const handleToggleStatus = async (row) => {
       }
     )
     
-    // 这里应该调用API
-    row.status = row.status === 1 ? 0 : 1
-    ElMessage.success(`${row.status === 1 ? '启用' : '禁用'}成功`)
+    const nextStatus = row.status === 1 ? 0 : 1
+    await updateRoleStatus(row.id, nextStatus)
+    ElMessage.success(`${nextStatus === 1 ? '启用' : '禁用'}成功`)
+    loadRoleList()
   } catch {
     // 用户取消
   }
@@ -389,13 +342,9 @@ const handleDelete = async (row) => {
       }
     )
     
-    // 这里应该调用API
-    const index = roleList.value.findIndex(item => item.id === row.id)
-    if (index > -1) {
-      roleList.value.splice(index, 1)
-      pagination.total--
-    }
+    await deleteRole(row.id)
     ElMessage.success('删除成功')
+    loadRoleList()
   } catch {
     // 用户取消
   }
@@ -428,39 +377,29 @@ const handleSubmit = async () => {
       
       submitLoading.value = true
       try {
-        // 这里应该调用API
-        await new Promise(resolve => setTimeout(resolve, 1000)) // 模拟API调用
-        
+        const payload = {
+          roleName: roleForm.roleName,
+          roleCode: roleForm.roleCode,
+          description: roleForm.description,
+          status: roleForm.status
+        }
+
+        let roleId = roleForm.id
         if (isEdit.value) {
-          // 编辑
-          const index = roleList.value.findIndex(item => item.id === roleForm.id)
-          if (index > -1) {
-            Object.assign(roleList.value[index], {
-              roleName: roleForm.roleName,
-              roleCode: roleForm.roleCode,
-              description: roleForm.description,
-              status: roleForm.status,
-              permissions: getPermissionsByIds(roleForm.permissionIds)
-            })
-          }
+          await updateRole(roleForm.id, payload)
           ElMessage.success('编辑成功')
         } else {
-          // 新增
-          const newRole = {
-            id: Date.now(),
-            roleName: roleForm.roleName,
-            roleCode: roleForm.roleCode,
-            description: roleForm.description,
-            status: roleForm.status,
-            createTime: new Date().toLocaleString(),
-            permissions: getPermissionsByIds(roleForm.permissionIds)
-          }
-          roleList.value.unshift(newRole)
-          pagination.total++
+          const created = await createRole(payload)
+          roleId = created.data?.id
           ElMessage.success('新增成功')
         }
-        
+
+        if (roleId) {
+          await assignRolePermissions(roleId, roleForm.permissionIds)
+        }
+
         dialogVisible.value = false
+        loadRoleList()
       } finally {
         submitLoading.value = false
       }
@@ -489,37 +428,28 @@ const resetForm = () => {
 
 const loadRoleList = () => {
   loading.value = true
-  // 这里应该调用API加载角色列表
-  setTimeout(() => {
+  getRoleList({
+    page: pagination.page,
+    size: pagination.size,
+    roleName: searchForm.roleName || undefined,
+    status: searchForm.status === '' ? undefined : searchForm.status
+  }).then((res) => {
+    const pageData = res.data || {}
+    roleList.value = (pageData.records || []).map((item) => ({
+      ...item,
+      permissions: item.permissions || []
+    }))
+    pagination.total = pageData.total || 0
+  }).finally(() => {
     loading.value = false
-  }, 500)
-}
-
-// 根据权限ID获取权限信息
-const getPermissionsByIds = (ids) => {
-  const permissions = []
-  const permissionMap = {
-    1: { id: 1, permissionName: '用户管理' },
-    2: { id: 2, permissionName: '角色管理' },
-    3: { id: 3, permissionName: '成绩录入' },
-    4: { id: 4, permissionName: '成绩统计' },
-    5: { id: 5, permissionName: '成绩查看' },
-    6: { id: 6, permissionName: '年级管理' },
-    7: { id: 7, permissionName: '班级管理' },
-    8: { id: 8, permissionName: '学科管理' }
-  }
-  
-  ids.forEach(id => {
-    if (permissionMap[id]) {
-      permissions.push(permissionMap[id])
-    }
   })
-  
-  return permissions
 }
 
 // 生命周期
 onMounted(() => {
+  getPermissionTree().then((res) => {
+    permissionTree.value = normalizePermissionNodes(res.data || [])
+  })
   loadRoleList()
 })
 </script>

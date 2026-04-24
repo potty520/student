@@ -29,6 +29,16 @@ public interface SchoolClassRepository extends JpaRepository<SchoolClass, Long>,
     Optional<SchoolClass> findByClassCodeAndDeleted(String classCode, Integer deleted);
 
     /**
+     * 检查班级编码是否存在
+     */
+    boolean existsByClassCodeAndDeleted(String classCode, Integer deleted);
+
+    /**
+     * 检查同年级同名班级是否存在
+     */
+    boolean existsByGradeIdAndClassNameAndDeleted(Long gradeId, String className, Integer deleted);
+
+    /**
      * 根据班级编码查找班级（排除指定班级）
      * 
      * @param classCode 班级编码
@@ -64,6 +74,11 @@ public interface SchoolClassRepository extends JpaRepository<SchoolClass, Long>,
      * @return 班级列表
      */
     List<SchoolClass> findByStatusAndDeletedOrderBySortOrder(Integer status, Integer deleted);
+
+    /**
+     * 根据ID和删除标记查找班级
+     */
+    Optional<SchoolClass> findByIdAndDeleted(Long id, Integer deleted);
 
     /**
      * 查询班级及年级信息

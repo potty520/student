@@ -347,9 +347,7 @@ const dialogTitle = computed(() => {
 
 // 权限检查
 const hasPermission = (permission) => {
-  // 临时返回true，确保页面能正常加载
-  return true
-  // return userStore.hasPermission(permission)
+  return userStore.hasPermission(permission)
 }
 
 // 模拟数据

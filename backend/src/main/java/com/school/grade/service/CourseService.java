@@ -57,7 +57,7 @@ public class CourseService {
                 List<Predicate> predicates = new ArrayList<>();
                 
                 // 软删除条件
-                predicates.add(criteriaBuilder.equal(root.get("deleted"), false));
+                predicates.add(criteriaBuilder.equal(root.get("deleted"), 0));
                 
                 // 课程名称模糊查询
                 if (StringUtils.hasText(courseName)) {
@@ -181,7 +181,24 @@ public class CourseService {
                 return Result.error("课程编码已被其他课程使用");
             }
 
-            Course savedCourse = courseRepository.save(course);
+            Course existing = existingCourse.get();
+            // 更新允许修改的字段，避免覆盖审计字段
+            existing.setCourseCode(course.getCourseCode());
+            existing.setCourseName(course.getCourseName());
+            existing.setStage(course.getStage());
+            existing.setCourseType(course.getCourseType());
+            existing.setCredit(course.getCredit());
+            existing.setFullScore(course.getFullScore());
+            existing.setScoreType(course.getScoreType());
+            existing.setPassScore(course.getPassScore());
+            existing.setGoodScore(course.getGoodScore());
+            existing.setExcellentScore(course.getExcellentScore());
+            existing.setDescription(course.getDescription());
+            existing.setStatus(course.getStatus());
+            existing.setSortOrder(course.getSortOrder());
+            existing.setRemark(course.getRemark());
+
+            Course savedCourse = courseRepository.save(existing);
             return Result.success(savedCourse);
         } catch (Exception e) {
             return Result.error("更新课程信息失败：" + e.getMessage());
@@ -390,7 +407,21 @@ public class CourseService {
             return Result.error("计分方式值必须在1-3之间");
         }
 
+        if (course.getCredit() != null && course.getCredit().compareTo(BigDecimal.ZERO) < 0) {
+            return Result.error("学分不能为负数");
+        }
+
         // 验证各分数线设置
+        if (course.getPassScore() != null && course.getPassScore().compareTo(BigDecimal.ZERO) < 0) {
+            return Result.error("及格分数不能为负数");
+        }
+        if (course.getGoodScore() != null && course.getGoodScore().compareTo(BigDecimal.ZERO) < 0) {
+            return Result.error("良好分数不能为负数");
+        }
+        if (course.getExcellentScore() != null && course.getExcellentScore().compareTo(BigDecimal.ZERO) < 0) {
+            return Result.error("优秀分数不能为负数");
+        }
+
         if (course.getPassScore() != null && 
             course.getPassScore().compareTo(course.getFullScore()) > 0) {
             return Result.error("及格分数不能大于满分");
@@ -404,6 +435,15 @@ public class CourseService {
         if (course.getExcellentScore() != null && 
             course.getExcellentScore().compareTo(course.getFullScore()) > 0) {
             return Result.error("优秀分数不能大于满分");
+        }
+
+        if (course.getPassScore() != null && course.getGoodScore() != null
+            && course.getPassScore().compareTo(course.getGoodScore()) > 0) {
+            return Result.error("及格分数不能大于良好分数");
+        }
+        if (course.getGoodScore() != null && course.getExcellentScore() != null
+            && course.getGoodScore().compareTo(course.getExcellentScore()) > 0) {
+            return Result.error("良好分数不能大于优秀分数");
         }
 
         return Result.success();

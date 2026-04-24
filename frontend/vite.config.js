@@ -31,13 +31,13 @@ export default defineConfig({
   // 开发服务器配置
   server: {
     host: '0.0.0.0',
-    port: 3000,
+    port: 5173,
     open: true,
     cors: true,
     // 代理配置 - 将API请求代理到后端服务器
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8081',
         changeOrigin: true,
         secure: false
       }

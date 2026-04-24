@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -21,7 +22,7 @@ import java.util.List;
  */
 @Tag(name = "课程管理")
 @RestController
-@RequestMapping("/api/courses")
+@RequestMapping("/courses")
 @CrossOrigin(origins = "*")
 public class CourseController {
 
@@ -58,6 +59,7 @@ public class CourseController {
      * 添加课程
      */
     @Operation(summary = "添加课程")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:course:add')")
     @PostMapping
     public Result<Course> addCourse(@Parameter(description = "课程信息") @Valid @RequestBody Course course) {
         return courseService.addCourse(course);
@@ -67,6 +69,7 @@ public class CourseController {
      * 更新课程信息
      */
     @Operation(summary = "更新课程信息")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:course:edit')")
     @PutMapping("/{id}")
     public Result<Course> updateCourse(
             @Parameter(description = "课程ID") @PathVariable Long id,
@@ -79,6 +82,7 @@ public class CourseController {
      * 删除课程
      */
     @Operation(summary = "删除课程")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:course:delete')")
     @DeleteMapping("/{id}")
     public Result<Void> deleteCourse(@Parameter(description = "课程ID") @PathVariable Long id) {
         return courseService.deleteCourse(id);
@@ -88,6 +92,7 @@ public class CourseController {
      * 批量删除课程
      */
     @Operation(summary = "批量删除课程")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:course:delete')")
     @DeleteMapping("/batch")
     public Result<Void> batchDeleteCourses(@Parameter(description = "课程ID列表") @RequestBody List<Long> ids) {
         return courseService.batchDeleteCourses(ids);

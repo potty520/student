@@ -10,24 +10,30 @@
     "lint": "eslint src --ext .vue,.js,.ts --fix"
   },
   "dependencies": {
-    "vue": "^3.4.31",
-    "vue-router": "^4.4.0",
-    "pinia": "^2.2.0",
-    "element-plus": "^2.3.6",
     "@element-plus/icons-vue": "^2.0.6",
     "axios": "^1.7.2",
     "dayjs": "^1.11.12",
-    "lodash-es": "^4.17.21"
+    "element-plus": "^2.3.6",
+    "lodash-es": "^4.17.21",
+    "pinia": "^2.2.0",
+    "vue": "^3.4.31",
+    "vue-router": "^4.4.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.6.2",
-    "vite": "^4.5.3",
+    "sass": "^1.77.6",
+    "terser": "^5.46.2",
     "unplugin-auto-import": "^0.16.7",
-    "unplugin-vue-components": "^0.25.2",
     "unplugin-element-plus": "^0.8.0",
-    "sass": "^1.77.6"
+    "unplugin-vue-components": "^0.25.2",
+    "vite": "^4.5.3"
   },
-  "keywords": ["vue3", "element-plus", "student-grade", "management-system"],
+  "keywords": [
+    "vue3",
+    "element-plus",
+    "student-grade",
+    "management-system"
+  ],
   "author": "Qoder",
   "license": "MIT"
 }

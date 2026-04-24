@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -23,7 +24,7 @@ import java.util.List;
  */
 @Tag(name = "班级管理", description = "班级管理相关接口")
 @RestController
-@RequestMapping("/api/basic/class")
+@RequestMapping("/basic/class")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class ClassController {
 
@@ -75,6 +76,7 @@ public class ClassController {
      * 新增班级
      */
     @Operation(summary = "新增班级")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:class:add')")
     @PostMapping
     public Result<SchoolClass> createClass(
             @Parameter(description = "班级信息") @Valid @RequestBody SchoolClass schoolClass) {
@@ -85,6 +87,7 @@ public class ClassController {
      * 更新班级
      */
     @Operation(summary = "更新班级")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:class:edit')")
     @PutMapping("/{id}")
     public Result<SchoolClass> updateClass(
             @Parameter(description = "班级ID") @PathVariable Long id,
@@ -96,6 +99,7 @@ public class ClassController {
      * 删除班级
      */
     @Operation(summary = "删除班级")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:class:delete')")
     @DeleteMapping("/{id}")
     public Result<Void> deleteClass(
             @Parameter(description = "班级ID") @PathVariable Long id) {
@@ -106,6 +110,7 @@ public class ClassController {
      * 批量删除班级
      */
     @Operation(summary = "批量删除班级")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:class:delete')")
     @DeleteMapping("/batch")
     public Result<Void> batchDeleteClasses(
             @Parameter(description = "班级ID列表") @RequestBody List<Long> ids) {

@@ -13,7 +13,10 @@ export const useUserStore = defineStore('user', () => {
   // 计算属性
   const isLoggedIn = computed(() => !!token.value)
   const hasRole = computed(() => (role) => roles.value.includes(role))
-  const hasPermission = computed(() => (permission) => permissions.value.includes(permission))
+  const hasPermission = computed(() => (permission) => {
+    if (!permission) return true
+    return permissions.value.includes('*:*:*') || permissions.value.includes(permission)
+  })
 
   // 登录
   const userLogin = async (loginForm) => {

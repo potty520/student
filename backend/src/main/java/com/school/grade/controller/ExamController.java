@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -21,7 +22,7 @@ import java.util.List;
  */
 @Tag(name = "考试管理")
 @RestController
-@RequestMapping("/api/exams")
+@RequestMapping("/exams")
 @CrossOrigin(origins = "*")
 public class ExamController {
 
@@ -58,6 +59,7 @@ public class ExamController {
      * 添加考试
      */
     @Operation(summary = "添加考试")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('grade:exam:add')")
     @PostMapping
     public Result<Exam> addExam(@Parameter(description = "考试信息") @Valid @RequestBody Exam exam) {
         return examService.addExam(exam);
@@ -67,6 +69,7 @@ public class ExamController {
      * 更新考试信息
      */
     @Operation(summary = "更新考试信息")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('grade:exam:edit')")
     @PutMapping("/{id}")
     public Result<Exam> updateExam(
             @Parameter(description = "考试ID") @PathVariable Long id,
@@ -79,6 +82,7 @@ public class ExamController {
      * 删除考试
      */
     @Operation(summary = "删除考试")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('grade:exam:delete')")
     @DeleteMapping("/{id}")
     public Result<Void> deleteExam(@Parameter(description = "考试ID") @PathVariable Long id) {
         return examService.deleteExam(id);
@@ -88,6 +92,7 @@ public class ExamController {
      * 批量删除考试
      */
     @Operation(summary = "批量删除考试")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('grade:exam:delete')")
     @DeleteMapping("/batch")
     public Result<Void> batchDeleteExams(@Parameter(description = "考试ID列表") @RequestBody List<Long> ids) {
         return examService.batchDeleteExams(ids);
@@ -128,6 +133,7 @@ public class ExamController {
      * 开始考试
      */
     @Operation(summary = "开始考试")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('grade:exam:start')")
     @PutMapping("/{id}/start")
     public Result<Void> startExam(@Parameter(description = "考试ID") @PathVariable Long id) {
         return examService.updateExamStatus(id, 1);
@@ -137,6 +143,7 @@ public class ExamController {
      * 结束考试
      */
     @Operation(summary = "结束考试")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('grade:exam:finish')")
     @PutMapping("/{id}/finish")
     public Result<Void> finishExam(@Parameter(description = "考试ID") @PathVariable Long id) {
         return examService.updateExamStatus(id, 2);
@@ -146,6 +153,7 @@ public class ExamController {
      * 发布考试成绩
      */
     @Operation(summary = "发布考试成绩")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('grade:exam:publish')")
     @PutMapping("/{id}/publish")
     public Result<Void> publishExam(@Parameter(description = "考试ID") @PathVariable Long id) {
         return examService.updateExamStatus(id, 3);

@@ -74,7 +74,7 @@
           <template #header>
             <div class="card-header">
               <span>系统通知</span>
-              <el-button type="text">更多</el-button>
+              <el-button type="text" @click="$router.push('/system/message')">更多</el-button>
             </div>
           </template>
           <div class="notice-list">
@@ -99,7 +99,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { formatDate } from '@/utils/date'
+import { getOverviewStats, getRecentExams, getSystemNotices } from '@/api/dashboard'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -183,40 +183,12 @@ const quickActions = ref([
 
 // 最近考试
 const recentExams = ref([
-  {
-    id: 1,
-    name: '期中考试',
-    date: '2024-11-15',
-    status: '进行中'
-  },
-  {
-    id: 2,
-    name: '月考三',
-    date: '2024-11-20',
-    status: '未开始'
-  },
-  {
-    id: 3,
-    name: '期末考试',
-    date: '2024-12-25',
-    status: '未开始'
-  }
+  
 ])
 
 // 系统通知
 const notices = ref([
-  {
-    id: 1,
-    title: '系统维护通知',
-    content: '系统将于本周末进行维护升级，请提前保存数据。',
-    time: '2024-08-25 10:00'
-  },
-  {
-    id: 2,
-    title: '新功能上线',
-    content: '成绩分析功能已上线，支持多维度统计分析。',
-    time: '2024-08-24 15:30'
-  }
+  
 ])
 
 // 定时器
@@ -277,9 +249,32 @@ onUnmounted(() => {
 // 加载统计数据
 const loadStats = async () => {
   try {
-    // 这里可以调用API获取真实的统计数据
-    // const response = await getSystemStats()
-    // stats.value = response.data
+    const data = await getOverviewStats()
+    stats.value = [
+      { ...stats.value[0], value: String(data.studentTotal) },
+      { ...stats.value[1], value: String(data.teacherTotal) },
+      { ...stats.value[2], value: String(data.classTotal) },
+      { ...stats.value[3], value: String(data.examTotal) }
+    ]
+
+    const [examRes, noticeRes] = await Promise.all([
+      getRecentExams(),
+      getSystemNotices()
+    ])
+
+    recentExams.value = (examRes.data?.records || []).map(item => ({
+      id: item.id,
+      name: item.examName,
+      date: item.startDate,
+      status: item.status === 0 ? '未开始' : item.status === 1 ? '进行中' : item.status === 2 ? '已结束' : '已发布'
+    }))
+
+    notices.value = (noticeRes.data || []).slice(0, 5).map(item => ({
+      id: item.id,
+      title: item.title,
+      content: item.content,
+      time: item.sendTime || item.createTime || ''
+    }))
   } catch (error) {
     console.error('加载统计数据失败:', error)
   }

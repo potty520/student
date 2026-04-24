@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -24,7 +25,7 @@ import java.util.Map;
  */
 @Tag(name = "用户管理", description = "用户增删改查、状态管理等接口")
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/users")
 @CrossOrigin(origins = "*")
 public class UserController {
 
@@ -35,6 +36,7 @@ public class UserController {
      * 分页查询用户列表
      */
     @Operation(summary = "分页查询用户列表")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/list")
     public Result<PageResult<User>> getUserList(
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") int page,
@@ -49,6 +51,7 @@ public class UserController {
      * 根据ID获取用户信息
      */
     @Operation(summary = "根据ID获取用户信息")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public Result<User> getUserById(@Parameter(description = "用户ID") @PathVariable Long id) {
         return userService.getUserById(id);
@@ -58,6 +61,7 @@ public class UserController {
      * 添加用户
      */
     @Operation(summary = "添加用户")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public Result<User> addUser(@Parameter(description = "用户信息") @Valid @RequestBody User user) {
         return userService.addUser(user);
@@ -67,6 +71,7 @@ public class UserController {
      * 更新用户信息
      */
     @Operation(summary = "更新用户信息")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public Result<User> updateUser(
             @Parameter(description = "用户ID") @PathVariable Long id,
@@ -79,6 +84,7 @@ public class UserController {
      * 删除用户
      */
     @Operation(summary = "删除用户")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public Result<Void> deleteUser(@Parameter(description = "用户ID") @PathVariable Long id) {
         return userService.deleteUser(id);
@@ -88,6 +94,7 @@ public class UserController {
      * 批量删除用户
      */
     @Operation(summary = "批量删除用户")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/batch")
     public Result<Void> batchDeleteUsers(@Parameter(description = "用户ID列表") @RequestBody List<Long> ids) {
         return userService.batchDeleteUsers(ids);
@@ -97,6 +104,7 @@ public class UserController {
      * 更新用户状态
      */
     @Operation(summary = "更新用户状态")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/status")
     public Result<Void> updateUserStatus(
             @Parameter(description = "用户ID") @PathVariable Long id,
@@ -108,6 +116,7 @@ public class UserController {
      * 启用用户
      */
     @Operation(summary = "启用用户")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/enable")
     public Result<Void> enableUser(@Parameter(description = "用户ID") @PathVariable Long id) {
         return userService.updateUserStatus(id, 1);
@@ -117,6 +126,7 @@ public class UserController {
      * 禁用用户
      */
     @Operation(summary = "禁用用户")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/disable")
     public Result<Void> disableUser(@Parameter(description = "用户ID") @PathVariable Long id) {
         return userService.updateUserStatus(id, 0);
@@ -126,6 +136,7 @@ public class UserController {
      * 重置用户密码
      */
     @Operation(summary = "重置用户密码")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/reset-password")
     public Result<Void> resetPassword(
             @Parameter(description = "用户ID") @PathVariable Long id,
@@ -184,6 +195,7 @@ public class UserController {
      * 获取活跃用户列表
      */
     @Operation(summary = "获取活跃用户列表")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/active")
     public Result<PageResult<User>> getActiveUsers(
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") int page,

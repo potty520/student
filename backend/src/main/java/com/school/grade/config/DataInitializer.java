@@ -11,10 +11,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Optional;
 import java.util.Set;
-import java.util.HashSet;
-import java.util.Arrays;
 
 /**
  * 数据初始化组件
@@ -133,7 +133,10 @@ public class DataInitializer implements CommandLineRunner {
         adminUser.setGender(1); // 1-男性
         adminUser.setStatus(1); // 1-启用
         adminUser.setDeleted(0); // 0-未删除
-        adminUser.setRoles(new HashSet<>(Arrays.asList(adminRole)));
+        // 避免触发实体的 hashCode/equals 导致懒加载异常
+        Set<Role> adminRoles = Collections.newSetFromMap(new IdentityHashMap<>());
+        adminRoles.add(adminRole);
+        adminUser.setRoles(adminRoles);
         adminUser.setCreateTime(LocalDateTime.now());
         adminUser.setUpdateTime(LocalDateTime.now());
 

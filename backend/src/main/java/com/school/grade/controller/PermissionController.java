@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -21,7 +22,7 @@ import java.util.List;
  */
 @Tag(name = "权限管理")
 @RestController
-@RequestMapping("/api/permissions")
+@RequestMapping("/permissions")
 @CrossOrigin(origins = "*")
 public class PermissionController {
 
@@ -32,6 +33,7 @@ public class PermissionController {
      * 分页查询权限列表
      */
     @Operation(summary = "分页查询权限列表")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/list")
     public Result<PageResult<Permission>> getPermissionList(
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") int page,
@@ -48,6 +50,7 @@ public class PermissionController {
      * 根据ID获取权限信息
      */
     @Operation(summary = "根据ID获取权限信息")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public Result<Permission> getPermissionById(@Parameter(description = "权限ID") @PathVariable Long id) {
         return permissionService.getPermissionById(id);
@@ -57,6 +60,7 @@ public class PermissionController {
      * 添加权限
      */
     @Operation(summary = "添加权限")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public Result<Permission> addPermission(@Parameter(description = "权限信息") @Valid @RequestBody Permission permission) {
         return permissionService.addPermission(permission);
@@ -66,6 +70,7 @@ public class PermissionController {
      * 更新权限信息
      */
     @Operation(summary = "更新权限信息")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public Result<Permission> updatePermission(
             @Parameter(description = "权限ID") @PathVariable Long id,
@@ -78,6 +83,7 @@ public class PermissionController {
      * 删除权限
      */
     @Operation(summary = "删除权限")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public Result<Void> deletePermission(@Parameter(description = "权限ID") @PathVariable Long id) {
         return permissionService.deletePermission(id);
@@ -87,6 +93,7 @@ public class PermissionController {
      * 批量删除权限
      */
     @Operation(summary = "批量删除权限")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/batch")
     public Result<Void> batchDeletePermissions(@Parameter(description = "权限ID列表") @RequestBody List<Long> ids) {
         return permissionService.batchDeletePermissions(ids);
@@ -96,6 +103,7 @@ public class PermissionController {
      * 更新权限状�?
      */
     @Operation(summary = "更新权限状态")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/status")
     public Result<Void> updatePermissionStatus(
             @Parameter(description = "权限ID") @PathVariable Long id,
@@ -107,6 +115,7 @@ public class PermissionController {
      * 获取权限树结�?
      */
     @Operation(summary = "获取权限树结构")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/tree")
     public Result<List<Permission>> getPermissionTree() {
         return permissionService.getPermissionTree();
@@ -125,6 +134,7 @@ public class PermissionController {
      * 获取所有启用的权限（用于下拉选择�?
      */
     @Operation(summary = "获取所有启用的权限")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/active")
     public Result<List<Permission>> getActivePermissions() {
         return permissionService.getActivePermissions();

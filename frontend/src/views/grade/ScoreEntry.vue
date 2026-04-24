@@ -216,8 +216,12 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import {
-  getScoreEntryTemplate,
-  batchCreateScores
+  batchCreateScores,
+  getExamList,
+  getClassList,
+  getCourseList,
+  getStudentsByClass,
+  getScoresByExamAndCourse
 } from '@/api/score'
 
 const userStore = useUserStore()
@@ -238,22 +242,9 @@ const selectionForm = reactive({
 })
 
 // 数据列表
-const examList = ref([
-  { id: 1, examName: '2024-2025学年第一学期期中考试' },
-  { id: 2, examName: '2024-2025学年第一学期期末考试' }
-])
-
-const classList = ref([
-  { id: 1, className: '一年级1班' },
-  { id: 2, className: '一年级2班' },
-  { id: 3, className: '二年级1班' }
-])
-
-const courseList = ref([
-  { id: 1, courseName: '语文' },
-  { id: 2, courseName: '数学' },
-  { id: 3, courseName: '英语' }
-])
+const examList = ref([])
+const classList = ref([])
+const courseList = ref([])
 
 const studentList = ref([])
 const examInfo = ref(null)
@@ -323,28 +314,39 @@ const loadScoreTemplate = async () => {
   
   loading.value = true
   try {
-    const response = await getScoreEntryTemplate({
-      examId: selectionForm.examId,
-      classId: selectionForm.classId,
-      courseId: selectionForm.courseId
-    })
-    
-    if (response.code === 200) {
-      const data = response.data
-      examInfo.value = data.examInfo
-      classInfo.value = data.classInfo
-      courseInfo.value = data.courseInfo
-      
-      // 初始化学生成绩数据
-      studentList.value = data.students.map(student => ({
-        ...student,
-        hasChanges: false
-      }))
-      
-      ElMessage.success('成绩表加载成功')
-    } else {
-      ElMessage.error(response.message || '加载成绩表失败')
+    const [studentsResp, scoresResp] = await Promise.all([
+      getStudentsByClass(selectionForm.classId),
+      getScoresByExamAndCourse(selectionForm.examId, selectionForm.courseId)
+    ])
+
+    if (studentsResp.code !== 200 || scoresResp.code !== 200) {
+      throw new Error('加载失败')
     }
+
+    examInfo.value = examList.value.find(item => item.id === selectionForm.examId) || null
+    classInfo.value = classList.value.find(item => item.id === selectionForm.classId) || null
+    courseInfo.value = courseList.value.find(item => item.id === selectionForm.courseId) || null
+
+    const scoreMap = new Map()
+    scoresResp.data.forEach(item => {
+      scoreMap.set(item.studentId, item)
+    })
+
+    studentList.value = (studentsResp.data || []).map(student => {
+      const existed = scoreMap.get(student.id)
+      return {
+        studentId: student.id,
+        studentCode: student.studentCode,
+        studentName: student.studentName,
+        scoreId: existed?.id || null,
+        score: existed?.score ?? null,
+        absent: (existed?.absent || 0) === 1,
+        remark: existed?.comment || '',
+        hasChanges: false
+      }
+    })
+
+    ElMessage.success('成绩表加载成功')
   } catch (error) {
     ElMessage.error('网络错误，请稍后重试')
   } finally {
@@ -395,12 +397,13 @@ const handleBatchSave = async () => {
     const scores = studentList.value
       .filter(student => student.hasChanges)
       .map(student => ({
+        id: student.scoreId,
         examId: selectionForm.examId,
         studentId: student.studentId,
         courseId: selectionForm.courseId,
         score: student.absent ? null : student.score,
-        absent: student.absent || false,
-        remark: student.remark || ''
+        absent: student.absent ? 1 : 0,
+        comment: student.remark || ''
       }))
     
     const response = await batchCreateScores(scores)
@@ -461,7 +464,21 @@ const handleImportConfirm = () => {
 
 // 页面加载
 onMounted(() => {
-  // 初始化数据
+  Promise.all([getExamList(), getClassList(), getCourseList()])
+    .then(([examResp, classResp, courseResp]) => {
+      if (examResp.code === 200) {
+        examList.value = examResp.data?.list || []
+      }
+      if (classResp.code === 200) {
+        classList.value = classResp.data || []
+      }
+      if (courseResp.code === 200) {
+        courseList.value = courseResp.data || []
+      }
+    })
+    .catch(() => {
+      ElMessage.error('初始化下拉数据失败')
+    })
 })
 </script>
 

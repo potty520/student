@@ -1,9 +1,7 @@
 package com.school.grade.common;
 
 import lombok.Data;
-import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -11,7 +9,7 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * 实体基类，包含通用字段
+ * 基础实体类，包含通用字段
  * 
  * @author Qoder
  * @version 1.0.0
@@ -36,13 +34,6 @@ public class BaseEntity {
     private LocalDateTime createTime;
 
     /**
-     * 创建人
-     */
-    @CreatedBy
-    @Column(name = "create_by", updatable = false, length = 50)
-    private String createBy;
-
-    /**
      * 更新时间
      */
     @LastModifiedDate
@@ -50,17 +41,34 @@ public class BaseEntity {
     private LocalDateTime updateTime;
 
     /**
-     * 更新人
+     * 创建人ID
      */
-    @LastModifiedBy
-    @Column(name = "update_by", length = 50)
-    private String updateBy;
+    @Column(name = "create_by")
+    private Long createBy;
+
+    /**
+     * 更新人ID
+     */
+    @Column(name = "update_by")
+    private Long updateBy;
 
     /**
      * 删除标记 0:未删除 1:已删除
      */
-    @Column(name = "deleted", nullable = false, columnDefinition = "TINYINT DEFAULT 0")
+    @Column(name = "deleted", columnDefinition = "TINYINT DEFAULT 0")
     private Integer deleted = 0;
+
+    /**
+     * 状态 0:禁用 1:启用
+     */
+    @Column(name = "status", columnDefinition = "TINYINT DEFAULT 1")
+    private Integer status = 1;
+
+    /**
+     * 排序号
+     */
+    @Column(name = "sort_order", columnDefinition = "INT DEFAULT 0")
+    private Integer sortOrder = 0;
 
     /**
      * 备注

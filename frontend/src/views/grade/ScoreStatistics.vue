@@ -243,7 +243,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { generateStatistics } from '@/api/score'
+import { generateStatistics, getExamList, getCourseList } from '@/api/score'
 
 // 响应式数据
 const loading = ref(false)
@@ -255,16 +255,8 @@ const filterForm = reactive({
 })
 
 // 数据列表
-const examList = ref([
-  { id: 1, examName: '2024-2025学年第一学期期中考试' },
-  { id: 2, examName: '2024-2025学年第一学期期末考试' }
-])
-
-const courseList = ref([
-  { id: 1, courseName: '语文' },
-  { id: 2, courseName: '数学' },
-  { id: 3, courseName: '英语' }
-])
+const examList = ref([])
+const courseList = ref([])
 
 // 统计数据
 const statistics = ref({
@@ -316,7 +308,22 @@ const loadStatistics = async () => {
     })
     
     if (response.code === 200) {
-      statistics.value = response.data
+      const data = response.data || {}
+      statistics.value = {
+        totalCount: data.totalCount || 0,
+        attendCount: data.validCount || 0,
+        absentCount: data.absentCount || 0,
+        maxScore: data.maxScore || 0,
+        minScore: data.minScore || 0,
+        avgScore: data.avgScore || 0,
+        excellentCount: data.excellentCount || 0,
+        excellentRate: data.excellentRate || 0,
+        goodCount: data.goodCount || 0,
+        goodRate: data.goodRate || 0,
+        passCount: data.passCount || 0,
+        passRate: data.passRate || 0,
+        scoreSegments: data.scoreSegments || {}
+      }
       ElMessage.success('统计数据加载成功')
     } else {
       ElMessage.error(response.message || '加载统计数据失败')
@@ -403,7 +410,18 @@ const getExcellentRateClass = (rate) => {
 
 // 页面加载
 onMounted(() => {
-  // 初始化数据
+  Promise.all([getExamList(), getCourseList()])
+    .then(([examResp, courseResp]) => {
+      if (examResp.code === 200) {
+        examList.value = examResp.data?.list || []
+      }
+      if (courseResp.code === 200) {
+        courseList.value = courseResp.data || []
+      }
+    })
+    .catch(() => {
+      ElMessage.error('初始化筛选数据失败')
+    })
 })
 </script>
 

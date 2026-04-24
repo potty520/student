@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -21,7 +22,7 @@ import java.util.List;
  */
 @Tag(name = "教师管理")
 @RestController
-@RequestMapping("/api/teachers")
+@RequestMapping("/teachers")
 @CrossOrigin(origins = "*")
 public class TeacherController {
 
@@ -57,6 +58,7 @@ public class TeacherController {
      * 添加教师
      */
     @Operation(summary = "添加教师")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:teacher:add')")
     @PostMapping
     public Result<Teacher> addTeacher(@Parameter(description = "教师信息") @Valid @RequestBody Teacher teacher) {
         return teacherService.addTeacher(teacher);
@@ -66,6 +68,7 @@ public class TeacherController {
      * 更新教师信息
      */
     @Operation(summary = "更新教师信息")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:teacher:edit')")
     @PutMapping("/{id}")
     public Result<Teacher> updateTeacher(
             @Parameter(description = "教师ID") @PathVariable Long id,
@@ -78,6 +81,7 @@ public class TeacherController {
      * 删除教师
      */
     @Operation(summary = "删除教师")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:teacher:delete')")
     @DeleteMapping("/{id}")
     public Result<Void> deleteTeacher(@Parameter(description = "教师ID") @PathVariable Long id) {
         return teacherService.deleteTeacher(id);
@@ -87,6 +91,7 @@ public class TeacherController {
      * 批量删除教师
      */
     @Operation(summary = "批量删除教师")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:teacher:delete')")
     @DeleteMapping("/batch")
     public Result<Void> batchDeleteTeachers(@Parameter(description = "教师ID列表") @RequestBody List<Long> ids) {
         return teacherService.batchDeleteTeachers(ids);

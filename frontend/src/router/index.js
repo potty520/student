@@ -22,6 +22,7 @@ const ScoreStatistics = () => import('@/views/grade/ScoreStatistics.vue')
 // 系统管理
 const UserManage = () => import('@/views/system/UserManage.vue')
 const RoleManage = () => import('@/views/system/RoleManage.vue')
+const MessageManage = () => import('@/views/system/MessageManage.vue')
 
 const routes = [
   {
@@ -101,6 +102,12 @@ const routes = [
         name: 'RoleManage',
         component: RoleManage,
         meta: { title: '角色管理', icon: 'UserFilled', parent: '系统管理' }
+      },
+      {
+        path: 'system/message',
+        name: 'MessageManage',
+        component: MessageManage,
+        meta: { title: '系统通知', icon: 'Bell', parent: '系统管理' }
       }
     ]
   }

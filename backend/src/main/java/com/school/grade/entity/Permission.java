@@ -1,13 +1,15 @@
 package com.school.grade.entity;
 
 import com.school.grade.common.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 权限实体类
@@ -16,7 +18,7 @@ import java.util.List;
  * @version 1.0.0
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = {"roles", "children"})
 @Entity
 @Table(name = "sys_permission")
 public class Permission extends BaseEntity {
@@ -24,22 +26,19 @@ public class Permission extends BaseEntity {
     /**
      * 权限编码
      */
-    @NotBlank(message = "权限编码不能为空")
-    @Column(name = "permission_code", unique = true, nullable = false, length = 100)
+    @Column(name = "permission_code", nullable = false, length = 100, unique = true)
     private String permissionCode;
 
     /**
      * 权限名称
      */
-    @NotBlank(message = "权限名称不能为空")
-    @Column(name = "permission_name", nullable = false, length = 50)
+    @Column(name = "permission_name", nullable = false, length = 100)
     private String permissionName;
 
     /**
      * 权限类型 1:菜单 2:按钮 3:接口
      */
-    @NotNull(message = "权限类型不能为空")
-    @Column(name = "permission_type", nullable = false, columnDefinition = "TINYINT")
+    @Column(name = "permission_type", nullable = false)
     private Integer permissionType;
 
     /**
@@ -49,10 +48,22 @@ public class Permission extends BaseEntity {
     private Long parentId;
 
     /**
-     * 权限路径
+     * 路由地址
      */
-    @Column(name = "permission_path", length = 200)
-    private String permissionPath;
+    @Column(name = "path", length = 200)
+    private String path;
+
+    /**
+     * 组件路径
+     */
+    @Column(name = "component", length = 200)
+    private String component;
+
+    /**
+     * 权限标识
+     */
+    @Column(name = "perms", length = 100)
+    private String perms;
 
     /**
      * 图标
@@ -61,22 +72,33 @@ public class Permission extends BaseEntity {
     private String icon;
 
     /**
-     * 排序
+     * 是否外链 0:否 1:是
      */
-    @Column(name = "sort_order", columnDefinition = "INT DEFAULT 0")
-    private Integer sortOrder = 0;
+    @Column(name = "is_frame", columnDefinition = "TINYINT DEFAULT 0")
+    private Integer isFrame = 0;
 
     /**
-     * 状态 0:禁用 1:启用
+     * 是否缓存 0:否 1:是
      */
-    @NotNull(message = "状态不能为空")
-    @Column(name = "status", nullable = false, columnDefinition = "TINYINT DEFAULT 1")
-    private Integer status = 1;
+    @Column(name = "is_cache", columnDefinition = "TINYINT DEFAULT 0")
+    private Integer isCache = 0;
 
     /**
-     * 子权限
+     * 权限描述
      */
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
-    private List<Permission> children;
+    @Column(name = "description", length = 200)
+    private String description;
+
+    /**
+     * 关联的角色集合
+     */
+    @JsonIgnore
+    @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
+    private Set<Role> roles = new HashSet<>();
+
+    /**
+     * 权限树子节点（运行时组装，不落库）
+     */
+    @Transient
+    private List<Permission> children = new ArrayList<>();
 }

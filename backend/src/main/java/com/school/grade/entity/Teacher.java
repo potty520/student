@@ -5,9 +5,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import java.time.LocalDate;
 
 /**
  * 教师实体类
@@ -18,40 +15,44 @@ import java.time.LocalDate;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "school_teacher")
+@Table(name = "sys_teacher")
 public class Teacher extends BaseEntity {
 
     /**
      * 教师工号
      */
-    @NotBlank(message = "教师工号不能为空")
-    @Column(name = "teacher_code", unique = true, nullable = false, length = 20)
+    @Column(name = "teacher_code", nullable = false, length = 20, unique = true)
     private String teacherCode;
 
     /**
      * 教师姓名
      */
-    @NotBlank(message = "教师姓名不能为空")
     @Column(name = "teacher_name", nullable = false, length = 50)
     private String teacherName;
 
     /**
-     * 性别 0:女 1:男
+     * 性别 1:男 2:女
      */
-    @Column(name = "gender", columnDefinition = "TINYINT DEFAULT 1")
+    @Column(name = "gender")
     private Integer gender;
+
+    /**
+     * 出生日期
+     */
+    @Column(name = "birth_date")
+    private java.time.LocalDate birthDate;
 
     /**
      * 身份证号
      */
-    @Column(name = "id_card", length = 18)
+    @Column(name = "id_card", length = 18, unique = true)
     private String idCard;
 
     /**
      * 手机号
      */
-    @Column(name = "phone", length = 11)
-    private String phone;
+    @Column(name = "mobile", length = 20)
+    private String mobile;
 
     /**
      * 邮箱
@@ -60,19 +61,7 @@ public class Teacher extends BaseEntity {
     private String email;
 
     /**
-     * 出生日期
-     */
-    @Column(name = "birth_date")
-    private LocalDate birthDate;
-
-    /**
-     * 入职日期
-     */
-    @Column(name = "hire_date")
-    private LocalDate hireDate;
-
-    /**
-     * 职位
+     * 职称
      */
     @Column(name = "position", length = 50)
     private String position;
@@ -80,32 +69,31 @@ public class Teacher extends BaseEntity {
     /**
      * 学历
      */
-    @Column(name = "education", length = 20)
+    @Column(name = "education", length = 50)
     private String education;
 
     /**
-     * 专业
+     * 毕业院校
      */
-    @Column(name = "major", length = 50)
-    private String major;
+    @Column(name = "graduate_school", length = 100)
+    private String graduateSchool;
 
     /**
-     * 关联用户ID
+     * 入职日期
+     */
+    @Column(name = "hire_date")
+    private java.time.LocalDate hireDate;
+
+    /**
+     * 用户ID（关联用户表）
      */
     @Column(name = "user_id")
     private Long userId;
 
     /**
-     * 关联用户
+     * 关联的用户信息
      */
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", insertable = false, updatable = false)
     private User user;
-
-    /**
-     * 状态 0:离职 1:在职
-     */
-    @NotNull(message = "状态不能为空")
-    @Column(name = "status", nullable = false, columnDefinition = "TINYINT DEFAULT 1")
-    private Integer status = 1;
 }

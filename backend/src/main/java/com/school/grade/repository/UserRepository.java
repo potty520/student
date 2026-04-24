@@ -54,7 +54,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
      * @param deleted 删除标记
      * @return 用户信息
      */
-    Optional<User> findByPhoneAndDeleted(String phone, Integer deleted);
+    Optional<User> findByMobileAndDeleted(String phone, Integer deleted);
 
     /**
      * 根据邮箱查找用户
@@ -73,6 +73,15 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
      */
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles r WHERE u.username = :username AND u.deleted = 0")
     Optional<User> findByUsernameWithRoles(@Param("username") String username);
+
+    /**
+     * 查询用户、角色及角色权限（用于登录鉴权下发权限）
+     */
+    @Query("SELECT DISTINCT u FROM User u " +
+            "LEFT JOIN FETCH u.roles r " +
+            "LEFT JOIN FETCH r.permissions p " +
+            "WHERE u.username = :username AND u.deleted = 0")
+    Optional<User> findByUsernameWithRolesAndPermissions(@Param("username") String username);
 
     /**
      * 统计用户数量

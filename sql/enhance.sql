@@ -78,7 +78,14 @@ CREATE TABLE `school_semester` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学期表';
 
 -- 消息通知表 (PM02需求)
+-- 注意：sys_message_receive 可能存在外键引用 sys_message，需先删子表再删父表
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS `sys_message_receive`;
 DROP TABLE IF EXISTS `sys_message`;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
 CREATE TABLE `sys_message` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `title` varchar(200) NOT NULL COMMENT '消息标题',
@@ -105,7 +112,6 @@ CREATE TABLE `sys_message` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='消息通知表';
 
 -- 消息接收表
-DROP TABLE IF EXISTS `sys_message_receive`;
 CREATE TABLE `sys_message_receive` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `message_id` bigint(20) NOT NULL COMMENT '消息ID',
@@ -185,30 +191,124 @@ INSERT INTO `school_semester` (`semester_name`, `school_year`, `semester`, `star
 ('2024-2025学年第二学期', '2024-2025', 2, '2025-02-20', '2025-07-10', 0, 0);
 
 -- 添加更多权限数据
-INSERT INTO `sys_permission` (`permission_code`, `permission_name`, `permission_type`, `parent_id`, `permission_path`, `icon`, `sort_order`, `status`) VALUES
+-- 适配当前表结构：sys_permission(path/perms/sort_order/status/...)
+INSERT INTO `sys_permission` (`permission_code`, `permission_name`, `permission_type`, `parent_id`, `path`, `perms`, `icon`, `sort_order`, `status`, `is_frame`, `is_cache`, `description`, `deleted`) VALUES
 -- 新增功能权限
-('grade:statistics:export', '导出统计', 2, 17, NULL, NULL, 3031, 1),
-('grade:statistics:print', '打印报表', 2, 17, NULL, NULL, 3032, 1),
-('sys:message', '消息通知', 1, 1, '/system/message', 'ChatLineRound', 104, 1),
-('sys:message:send', '发送消息', 2, 33, NULL, NULL, 1041, 1),
-('sys:backup', '数据备份', 1, 1, '/system/backup', 'Download', 105, 1),
-('sys:backup:create', '创建备份', 2, 34, NULL, NULL, 1051, 1),
-('sys:backup:restore', '恢复备份', 2, 34, NULL, NULL, 1052, 1),
-('report:trend', '成绩趋势分析', 1, 4, '/report/trend', 'TrendCharts', 404, 1);
+('grade:statistics:export', '导出统计', 2, 17, NULL, 'grade:statistics:export', NULL, 3031, 1, 0, 0, NULL, 0),
+('grade:statistics:print', '打印报表', 2, 17, NULL, 'grade:statistics:print', NULL, 3032, 1, 0, 0, NULL, 0),
+('sys:message', '消息通知', 1, 1, '/system/message', 'sys:message', 'ChatLineRound', 104, 1, 0, 0, NULL, 0),
+('sys:message:send', '发送消息', 2, 33, NULL, 'sys:message:send', NULL, 1041, 1, 0, 0, NULL, 0),
+('sys:backup', '数据备份', 1, 1, '/system/backup', 'sys:backup', 'Download', 105, 1, 0, 0, NULL, 0),
+('sys:backup:create', '创建备份', 2, 34, NULL, 'sys:backup:create', NULL, 1051, 1, 0, 0, NULL, 0),
+('sys:backup:restore', '恢复备份', 2, 34, NULL, 'sys:backup:restore', NULL, 1052, 1, 0, 0, NULL, 0),
+('report:trend', '成绩趋势分析', 1, 4, '/report/trend', 'report:trend', 'TrendCharts', 404, 1, 0, 0, NULL, 0),
+('basic:grade:add', '新增年级', 2, 0, NULL, 'basic:grade:add', NULL, 1101, 1, 0, 0, '基础信息-年级新增', 0),
+('basic:grade:edit', '编辑年级', 2, 0, NULL, 'basic:grade:edit', NULL, 1102, 1, 0, 0, '基础信息-年级编辑', 0),
+('basic:grade:delete', '删除年级', 2, 0, NULL, 'basic:grade:delete', NULL, 1103, 1, 0, 0, '基础信息-年级删除', 0),
+('basic:class:add', '新增班级', 2, 0, NULL, 'basic:class:add', NULL, 1201, 1, 0, 0, '基础信息-班级新增', 0),
+('basic:class:edit', '编辑班级', 2, 0, NULL, 'basic:class:edit', NULL, 1202, 1, 0, 0, '基础信息-班级编辑', 0),
+('basic:class:delete', '删除班级', 2, 0, NULL, 'basic:class:delete', NULL, 1203, 1, 0, 0, '基础信息-班级删除', 0),
+('basic:course:add', '新增课程', 2, 0, NULL, 'basic:course:add', NULL, 1301, 1, 0, 0, '基础信息-课程新增', 0),
+('basic:course:edit', '编辑课程', 2, 0, NULL, 'basic:course:edit', NULL, 1302, 1, 0, 0, '基础信息-课程编辑', 0),
+('basic:course:delete', '删除课程', 2, 0, NULL, 'basic:course:delete', NULL, 1303, 1, 0, 0, '基础信息-课程删除', 0)
+-- 幂等：若 permission_code 已存在则更新关键字段，避免重复执行报错
+ON DUPLICATE KEY UPDATE
+  `permission_name` = VALUES(`permission_name`),
+  `permission_type` = VALUES(`permission_type`),
+  `parent_id` = VALUES(`parent_id`),
+  `path` = VALUES(`path`),
+  `perms` = VALUES(`perms`),
+  `icon` = VALUES(`icon`),
+  `sort_order` = VALUES(`sort_order`),
+  `status` = VALUES(`status`),
+  `is_frame` = VALUES(`is_frame`),
+  `is_cache` = VALUES(`is_cache`),
+  `description` = VALUES(`description`),
+  `deleted` = VALUES(`deleted`);
+
+-- 管理员角色自动绑定上述权限（幂等）
+INSERT INTO `sys_role_permission` (`role_id`, `permission_id`)
+SELECT r.id, p.id
+FROM `sys_role` r
+JOIN `sys_permission` p ON p.deleted = 0
+WHERE r.role_code = 'ADMIN'
+  AND p.permission_code IN (
+    'grade:statistics:export',
+    'grade:statistics:print',
+    'sys:message',
+    'sys:message:send',
+    'sys:backup',
+    'sys:backup:create',
+    'sys:backup:restore',
+    'report:trend',
+    'basic:grade:add',
+    'basic:grade:edit',
+    'basic:grade:delete',
+    'basic:class:add',
+    'basic:class:edit',
+    'basic:class:delete',
+    'basic:course:add',
+    'basic:course:edit',
+    'basic:course:delete'
+  )
+  AND NOT EXISTS (
+    SELECT 1
+    FROM `sys_role_permission` rp
+    WHERE rp.role_id = r.id AND rp.permission_id = p.id
+  );
 
 -- 更新已有考试数据状态
-INSERT INTO `school_exam` (`exam_code`, `exam_name`, `exam_type`, `school_year`, `semester`, `start_date`, `end_date`, `grade_ids`, `course_ids`, `description`, `status`) VALUES
-('EXAM_2024_MID', '2024-2025学年第一学期期中考试', 2, '2024-2025', 1, '2024-11-15', '2024-11-17', '1,2,3,4,5,6', '1,2,3,4,5', '期中考试安排', 1),
-('EXAM_2024_FINAL', '2024-2025学年第一学期期末考试', 3, '2024-2025', 1, '2025-01-10', '2025-01-12', '1,2,3,4,5,6', '1,2,3,4,5,6,7,8', '期末考试安排', 0);
+-- 适配当前表结构：exam_info
+INSERT INTO `exam_info` (`exam_code`, `exam_name`, `exam_type`, `school_year`, `semester`, `start_date`, `end_date`, `grade_ids`, `course_ids`, `description`, `status`, `deleted`) VALUES
+('EXAM_2024_MID', '2024-2025学年第一学期期中考试', 2, '2024-2025', 1, '2024-11-15', '2024-11-17', '1,2,3,4,5,6', '1,2,3,4,5', '期中考试安排', 1, 0),
+('EXAM_2024_FINAL', '2024-2025学年第一学期期末考试', 3, '2024-2025', 1, '2025-01-10', '2025-01-12', '1,2,3,4,5,6', '1,2,3,4,5,6,7,8', '期末考试安排', 0, 0)
+ON DUPLICATE KEY UPDATE
+  `exam_name` = VALUES(`exam_name`),
+  `exam_type` = VALUES(`exam_type`),
+  `school_year` = VALUES(`school_year`),
+  `semester` = VALUES(`semester`),
+  `start_date` = VALUES(`start_date`),
+  `end_date` = VALUES(`end_date`),
+  `grade_ids` = VALUES(`grade_ids`),
+  `course_ids` = VALUES(`course_ids`),
+  `description` = VALUES(`description`),
+  `status` = VALUES(`status`),
+  `deleted` = VALUES(`deleted`);
 
 -- 添加更多教师任课关系
-INSERT INTO `teacher_class_course` (`teacher_id`, `class_id`, `course_id`, `school_year`, `semester`, `status`) VALUES
-(1, 1, 1, '2024-2025', 1, 1), -- 张老师教一年级1班语文
-(1, 2, 1, '2024-2025', 1, 1), -- 张老师教一年级2班语文
-(2, 1, 2, '2024-2025', 1, 1), -- 李老师教一年级1班数学
-(2, 2, 2, '2024-2025', 1, 1), -- 李老师教一年级2班数学
-(3, 1, 3, '2024-2025', 1, 1), -- 王老师教一年级1班英语
-(3, 3, 3, '2024-2025', 1, 1); -- 王老师教二年级1班英语
+-- 适配当前表结构：sys_teacher_class_course（无school_year/semester字段）
+-- 注意：不要硬编码 teacher_id/class_id/course_id（可能与现有数据不一致），改为按编码查ID再插入
+INSERT INTO `sys_teacher_class_course` (`teacher_id`, `class_id`, `course_id`, `status`, `deleted`)
+SELECT t.id, c.id, co.id, 1, 0
+FROM `sys_teacher` t
+JOIN `sys_class` c
+JOIN `sys_course` co
+WHERE t.teacher_code = 'T2025001' AND c.class_code = 'C7-01' AND co.course_code = 'C-CH-001'
+ON DUPLICATE KEY UPDATE `status`=VALUES(`status`), `deleted`=VALUES(`deleted`);
+
+INSERT INTO `sys_teacher_class_course` (`teacher_id`, `class_id`, `course_id`, `status`, `deleted`)
+SELECT t.id, c.id, co.id, 1, 0
+FROM `sys_teacher` t
+JOIN `sys_class` c
+JOIN `sys_course` co
+WHERE t.teacher_code = 'T2025001' AND c.class_code = 'C8-01' AND co.course_code = 'C-CH-001'
+ON DUPLICATE KEY UPDATE `status`=VALUES(`status`), `deleted`=VALUES(`deleted`);
+
+INSERT INTO `sys_teacher_class_course` (`teacher_id`, `class_id`, `course_id`, `status`, `deleted`)
+SELECT t.id, c.id, co.id, 1, 0
+FROM `sys_teacher` t
+JOIN `sys_class` c
+JOIN `sys_course` co
+WHERE t.teacher_code = 'T2025002' AND c.class_code = 'C7-01' AND co.course_code = 'C-MA-001'
+ON DUPLICATE KEY UPDATE `status`=VALUES(`status`), `deleted`=VALUES(`deleted`);
+
+INSERT INTO `sys_teacher_class_course` (`teacher_id`, `class_id`, `course_id`, `status`, `deleted`)
+SELECT t.id, c.id, co.id, 1, 0
+FROM `sys_teacher` t
+JOIN `sys_class` c
+JOIN `sys_course` co
+WHERE t.teacher_code = 'T2025002' AND c.class_code = 'C8-01' AND co.course_code = 'C-MA-001'
+ON DUPLICATE KEY UPDATE `status`=VALUES(`status`), `deleted`=VALUES(`deleted`);
 
 -- 创建视图：班级成绩概览
 CREATE OR REPLACE VIEW `v_class_score_overview` AS
@@ -226,12 +326,12 @@ SELECT
     MIN(sc.score) as min_score,
     SUM(CASE WHEN sc.score >= 85 THEN 1 ELSE 0 END) as excellent_count,
     SUM(CASE WHEN sc.score >= 60 THEN 1 ELSE 0 END) as pass_count
-FROM school_class c
-LEFT JOIN school_grade g ON c.grade_id = g.id
-LEFT JOIN school_student s ON c.id = s.class_id AND s.status = 1
-LEFT JOIN school_score sc ON s.id = sc.student_id
-LEFT JOIN school_exam e ON sc.exam_id = e.id
-LEFT JOIN school_course co ON sc.course_id = co.id
+FROM sys_class c
+LEFT JOIN sys_grade g ON c.grade_id = g.id
+LEFT JOIN sys_student s ON c.id = s.class_id AND s.status = 1 AND s.deleted = 0
+LEFT JOIN exam_score sc ON s.id = sc.student_id AND sc.deleted = 0
+LEFT JOIN exam_info e ON sc.exam_id = e.id AND e.deleted = 0
+LEFT JOIN sys_course co ON sc.course_id = co.id AND co.deleted = 0
 WHERE c.deleted = 0 AND g.deleted = 0
 GROUP BY c.id, e.id, co.id;
 
@@ -255,17 +355,74 @@ SELECT
         WHEN sc.score >= 60 THEN '及格'
         ELSE '不及格'
     END as grade_level
-FROM school_student s
-LEFT JOIN school_class c ON s.class_id = c.id
-LEFT JOIN school_grade g ON c.grade_id = g.id
-LEFT JOIN school_score sc ON s.id = sc.student_id
-LEFT JOIN school_exam e ON sc.exam_id = e.id
-LEFT JOIN school_course co ON sc.course_id = co.id
+FROM sys_student s
+LEFT JOIN sys_class c ON s.class_id = c.id
+LEFT JOIN sys_grade g ON c.grade_id = g.id
+LEFT JOIN exam_score sc ON s.id = sc.student_id AND sc.deleted = 0
+LEFT JOIN exam_info e ON sc.exam_id = e.id AND e.deleted = 0
+LEFT JOIN sys_course co ON sc.course_id = co.id AND co.deleted = 0
 WHERE s.deleted = 0 AND s.status = 1;
 
 -- 添加索引优化
-ALTER TABLE `school_score` ADD INDEX `idx_exam_course` (`exam_id`, `course_id`);
-ALTER TABLE `school_score` ADD INDEX `idx_student_exam` (`student_id`, `exam_id`);
-ALTER TABLE `school_class` ADD INDEX `idx_grade_id` (`grade_id`);
-ALTER TABLE `school_student` ADD INDEX `idx_class_id` (`class_id`);
-ALTER TABLE `teacher_class_course` ADD INDEX `idx_teacher_semester` (`teacher_id`, `school_year`, `semester`);
+-- 幂等创建索引（避免重复执行报 1061）
+SET @db_name = DATABASE();
+
+SET @sql = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1 FROM information_schema.statistics
+      WHERE table_schema = @db_name AND table_name = 'exam_score' AND index_name = 'idx_exam_course'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `exam_score` ADD INDEX `idx_exam_course` (`exam_id`, `course_id`)'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1 FROM information_schema.statistics
+      WHERE table_schema = @db_name AND table_name = 'exam_score' AND index_name = 'idx_student_exam'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `exam_score` ADD INDEX `idx_student_exam` (`student_id`, `exam_id`)'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1 FROM information_schema.statistics
+      WHERE table_schema = @db_name AND table_name = 'sys_class' AND index_name = 'idx_grade_id'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `sys_class` ADD INDEX `idx_grade_id` (`grade_id`)'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1 FROM information_schema.statistics
+      WHERE table_schema = @db_name AND table_name = 'sys_student' AND index_name = 'idx_class_id'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `sys_student` ADD INDEX `idx_class_id` (`class_id`)'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+  SELECT IF(
+    EXISTS(
+      SELECT 1 FROM information_schema.statistics
+      WHERE table_schema = @db_name AND table_name = 'sys_teacher_class_course' AND index_name = 'idx_teacher_class_course'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `sys_teacher_class_course` ADD INDEX `idx_teacher_class_course` (`teacher_id`, `class_id`, `course_id`)'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

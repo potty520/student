@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -22,7 +23,7 @@ import java.util.List;
  */
 @Tag(name = "角色管理")
 @RestController
-@RequestMapping("/api/roles")
+@RequestMapping("/roles")
 @CrossOrigin(origins = "*")
 public class RoleController {
 
@@ -33,6 +34,7 @@ public class RoleController {
      * 分页查询角色列表
      */
     @Operation(summary = "分页查询角色列表")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/list")
     public Result<PageResult<Role>> getRoleList(
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") int page,
@@ -48,6 +50,7 @@ public class RoleController {
      * 根据ID获取角色信息
      */
     @Operation(summary = "根据ID获取角色信息")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public Result<Role> getRoleById(@Parameter(description = "角色ID") @PathVariable Long id) {
         return roleService.getRoleById(id);
@@ -57,6 +60,7 @@ public class RoleController {
      * 添加角色
      */
     @Operation(summary = "添加角色")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public Result<Role> addRole(@Parameter(description = "角色信息") @Valid @RequestBody Role role) {
         return roleService.addRole(role);
@@ -66,6 +70,7 @@ public class RoleController {
      * 更新角色信息
      */
     @Operation(summary = "更新角色信息")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public Result<Role> updateRole(
             @Parameter(description = "角色ID") @PathVariable Long id,
@@ -78,6 +83,7 @@ public class RoleController {
      * 删除角色
      */
     @Operation(summary = "删除角色")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public Result<Void> deleteRole(@Parameter(description = "角色ID") @PathVariable Long id) {
         return roleService.deleteRole(id);
@@ -87,6 +93,7 @@ public class RoleController {
      * 批量删除角色
      */
     @Operation(summary = "批量删除角色")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/batch")
     public Result<Void> batchDeleteRoles(@Parameter(description = "角色ID列表") @RequestBody List<Long> ids) {
         return roleService.batchDeleteRoles(ids);
@@ -96,6 +103,7 @@ public class RoleController {
      * 更新角色状�?
      */
     @Operation(summary = "更新角色状态")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/status")
     public Result<Void> updateRoleStatus(
             @Parameter(description = "角色ID") @PathVariable Long id,
@@ -107,6 +115,7 @@ public class RoleController {
      * 获取角色权限列表
      */
     @Operation(summary = "获取角色权限列表")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}/permissions")
     public Result<List<Permission>> getRolePermissions(@Parameter(description = "角色ID") @PathVariable Long id) {
         return roleService.getRolePermissions(id);
@@ -116,6 +125,7 @@ public class RoleController {
      * 分配角色权限
      */
     @Operation(summary = "分配角色权限")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/permissions")
     public Result<Void> assignRolePermissions(
             @Parameter(description = "角色ID") @PathVariable Long id,
@@ -127,6 +137,7 @@ public class RoleController {
      * 获取所有启用的角色（用于下拉选择�?
      */
     @Operation(summary = "获取所有启用的角色")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/active")
     public Result<List<Role>> getActiveRoles() {
         return roleService.getActiveRoles();

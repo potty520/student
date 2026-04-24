@@ -60,7 +60,7 @@ public class TeacherService {
                 List<Predicate> predicates = new ArrayList<>();
                 
                 // 软删除条件
-                predicates.add(criteriaBuilder.equal(root.get("deleted"), false));
+                predicates.add(criteriaBuilder.equal(root.get("deleted"), 0));
                 
                 // 教师姓名模糊查询
                 if (StringUtils.hasText(teacherName)) {
@@ -345,8 +345,8 @@ public class TeacherService {
         }
 
         // 验证手机号格式（如果提供）
-        if (StringUtils.hasText(teacher.getPhone()) && 
-            !teacher.getPhone().matches("^1[3-9]\\d{9}$")) {
+        if (StringUtils.hasText(teacher.getMobile()) && 
+            !teacher.getMobile().matches("^1[3-9]\\d{9}$")) {
             return Result.error("手机号格式不正确");
         }
 

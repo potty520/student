@@ -1,114 +1,261 @@
--- 基础数据初始化脚本
--- 作者: Qoder
--- 版本: 1.0.0
+-- =============================================
+-- 学生成绩管理系统 - 基础数据脚本
+-- 执行前请先运行 init.sql
+-- =============================================
 
+SET NAMES utf8mb4;
 USE `student_grade_system`;
 
--- 初始化权限数据
-INSERT INTO `sys_permission` (`permission_code`, `permission_name`, `permission_type`, `parent_id`, `permission_path`, `icon`, `sort_order`, `status`) VALUES
--- 一级菜单
-('sys:manage', '系统管理', 1, NULL, '/system', 'Setting', 1, 1),
-('basic:manage', '基础信息管理', 1, NULL, '/basic', 'Document', 2, 1),
-('grade:manage', '成绩管理', 1, NULL, '/grade', 'DataAnalysis', 3, 1),
-('report:manage', '报表分析', 1, NULL, '/report', 'PieChart', 4, 1),
+-- ----------------------------
+-- 角色初始化
+-- ----------------------------
+INSERT INTO `sys_role`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `role_code`,`role_name`,`description`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 1, '系统内置', 'ADMIN', '管理员', '系统管理员角色'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_role` WHERE `role_code`='ADMIN' AND `deleted`=0);
 
--- 系统管理子菜单
-('sys:user', '用户管理', 1, 1, '/system/user', 'User', 101, 1),
-('sys:role', '角色管理', 1, 1, '/system/role', 'UserFilled', 102, 1),
-('sys:permission', '权限管理', 1, 1, '/system/permission', 'Lock', 103, 1),
+INSERT INTO `sys_role`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `role_code`,`role_name`,`description`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 2, '系统内置', 'TEACHER', '教师', '教师角色'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_role` WHERE `role_code`='TEACHER' AND `deleted`=0);
 
--- 基础信息管理子菜单
-('basic:grade', '年级管理', 1, 2, '/basic/grade', 'School', 201, 1),
-('basic:class', '班级管理', 1, 2, '/basic/class', 'House', 202, 1),
-('basic:teacher', '教师管理', 1, 2, '/basic/teacher', 'Avatar', 203, 1),
-('basic:student', '学生管理', 1, 2, '/basic/student', 'UserFilled', 204, 1),
-('basic:course', '课程管理', 1, 2, '/basic/course', 'Reading', 205, 1),
+INSERT INTO `sys_role`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `role_code`,`role_name`,`description`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 3, '系统内置', 'student', '学生', '学生角色'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_role` WHERE `role_code`='student' AND `deleted`=0);
 
--- 成绩管理子菜单
-('grade:exam', '考试管理', 1, 3, '/grade/exam', 'Document', 301, 1),
-('grade:score', '成绩录入', 1, 3, '/grade/score', 'Edit', 302, 1),
-('grade:statistics', '成绩统计', 1, 3, '/grade/statistics', 'DataAnalysis', 303, 1),
+-- ----------------------------
+-- 权限初始化（简化版）
+-- ----------------------------
+INSERT INTO `sys_permission`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `permission_code`,`permission_name`,`permission_type`,`parent_id`,`path`,`component`,`perms`,`icon`,`is_frame`,`is_cache`,`description`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 1, '系统内置',
+       'SYSTEM:ALL', '系统管理', 1, 0, '/system', 'Layout', 'system:*:*', 'Setting', 0, 0, '系统管理菜单'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `permission_code`='SYSTEM:ALL' AND `deleted`=0);
 
--- 报表分析子菜单
-('report:student', '学生成绩报告', 1, 4, '/report/student', 'User', 401, 1),
-('report:class', '班级成绩报告', 1, 4, '/report/class', 'House', 402, 1),
-('report:teacher', '教学分析报告', 1, 4, '/report/teacher', 'Avatar', 403, 1),
+INSERT INTO `sys_permission`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `permission_code`,`permission_name`,`permission_type`,`parent_id`,`path`,`component`,`perms`,`icon`,`is_frame`,`is_cache`,`description`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 2, '系统内置',
+       'BASIC:ALL', '基础信息', 1, 0, '/basic', 'Layout', 'basic:*:*', 'School', 0, 0, '基础信息菜单'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `permission_code`='BASIC:ALL' AND `deleted`=0);
 
--- 按钮权限
-('sys:user:add', '添加用户', 2, 5, NULL, NULL, 1001, 1),
-('sys:user:edit', '编辑用户', 2, 5, NULL, NULL, 1002, 1),
-('sys:user:delete', '删除用户', 2, 5, NULL, NULL, 1003, 1),
-('sys:user:reset', '重置密码', 2, 5, NULL, NULL, 1004, 1),
+INSERT INTO `sys_permission`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `permission_code`,`permission_name`,`permission_type`,`parent_id`,`path`,`component`,`perms`,`icon`,`is_frame`,`is_cache`,`description`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 3, '系统内置',
+       'GRADE:ALL', '成绩管理', 1, 0, '/grade', 'Layout', 'grade:*:*', 'DataLine', 0, 0, '成绩管理菜单'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_permission` WHERE `permission_code`='GRADE:ALL' AND `deleted`=0);
 
-('basic:grade:add', '添加年级', 2, 9, NULL, NULL, 2001, 1),
-('basic:grade:edit', '编辑年级', 2, 9, NULL, NULL, 2002, 1),
-('basic:grade:delete', '删除年级', 2, 9, NULL, NULL, 2003, 1),
+-- 管理员角色绑定所有权限
+INSERT INTO `sys_role_permission` (`role_id`, `permission_id`)
+SELECT r.id, p.id
+FROM `sys_role` r
+JOIN `sys_permission` p ON p.deleted = 0
+WHERE r.role_code = 'ADMIN'
+  AND r.deleted = 0
+  AND NOT EXISTS (
+      SELECT 1 FROM `sys_role_permission` rp
+      WHERE rp.role_id = r.id AND rp.permission_id = p.id
+  );
 
-('basic:student:add', '添加学生', 2, 12, NULL, NULL, 2041, 1),
-('basic:student:edit', '编辑学生', 2, 12, NULL, NULL, 2042, 1),
-('basic:student:delete', '删除学生', 2, 12, NULL, NULL, 2043, 1),
-('basic:student:import', '导入学生', 2, 12, NULL, NULL, 2044, 1),
+-- ----------------------------
+-- 基础年级、班级、课程
+-- ----------------------------
+INSERT INTO `sys_grade`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `grade_code`,`grade_name`,`stage`,`school_year`,`grade_level`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 1, '演示数据',
+       'G7-2025', '七年级', 2, '2025-2026', 7
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_grade` WHERE `grade_code`='G7-2025' AND `deleted`=0);
 
-('grade:score:entry', '录入成绩', 2, 16, NULL, NULL, 3021, 1),
-('grade:score:edit', '修改成绩', 2, 16, NULL, NULL, 3022, 1),
-('grade:score:import', '导入成绩', 2, 16, NULL, NULL, 3023, 1);
+INSERT INTO `sys_grade`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `grade_code`,`grade_name`,`stage`,`school_year`,`grade_level`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 2, '演示数据',
+       'G8-2025', '八年级', 2, '2025-2026', 8
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_grade` WHERE `grade_code`='G8-2025' AND `deleted`=0);
 
--- 初始化角色数据
-INSERT INTO `sys_role` (`role_code`, `role_name`, `description`, `sort_order`, `status`) VALUES
-('ADMIN', '系统管理员', '系统最高权限管理员', 1, 1),
-('ACADEMIC_ADMIN', '教务管理员', '教务处管理员，负责教务管理', 2, 1),
-('HEAD_TEACHER', '班主任', '班主任角色，管理本班学生', 3, 1),
-('TEACHER', '任课教师', '任课教师角色，录入成绩', 4, 1),
-('PRINCIPAL', '校长', '校长角色，查看统计报表', 5, 1),
-('STUDENT', '学生', '学生角色，查看个人成绩', 6, 1),
-('PARENT', '家长', '家长角色，查看子女成绩', 7, 1);
+INSERT INTO `sys_course`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `course_code`,`course_name`,`stage`,`course_type`,`credit`,`full_score`,`score_type`,`pass_score`,`good_score`,`excellent_score`,`description`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 1, '演示数据',
+       'C-CH-001', '语文', 2, 1, 2.0, 100.00, 1, 60.00, 80.00, 90.00, '初中语文'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_course` WHERE `course_code`='C-CH-001' AND `deleted`=0);
 
--- 初始化管理员用户 (密码: admin123)
-INSERT INTO `sys_user` (`username`, `password`, `real_name`, `gender`, `phone`, `email`, `status`) VALUES
-('admin', '$2a$10$7JB720yubVSOfvVWdTuXJe2QW1H.RQK0J0n3MhAG..eiVUOjV9cZu', '系统管理员', 1, '13800138000', 'admin@school.com', 1);
+INSERT INTO `sys_course`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `course_code`,`course_name`,`stage`,`course_type`,`credit`,`full_score`,`score_type`,`pass_score`,`good_score`,`excellent_score`,`description`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 2, '演示数据',
+       'C-MA-001', '数学', 2, 1, 2.0, 100.00, 1, 60.00, 80.00, 90.00, '初中数学'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_course` WHERE `course_code`='C-MA-001' AND `deleted`=0);
 
--- 管理员角色关联
-INSERT INTO `sys_user_role` (`user_id`, `role_id`) VALUES (1, 1);
+INSERT INTO `sys_course`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `course_code`,`course_name`,`stage`,`course_type`,`credit`,`full_score`,`score_type`,`pass_score`,`good_score`,`excellent_score`,`description`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 3, '演示数据',
+       'C-EN-001', '英语', 2, 1, 2.0, 100.00, 1, 60.00, 80.00, 90.00, '初中英语'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_course` WHERE `course_code`='C-EN-001' AND `deleted`=0);
 
--- 管理员权限关联 (给管理员所有权限)
-INSERT INTO `sys_role_permission` (`role_id`, `permission_id`) 
-SELECT 1, id FROM `sys_permission`;
+-- ----------------------------
+-- 教师、班级、学生演示数据
+-- ----------------------------
+INSERT INTO `sys_teacher`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `teacher_code`,`teacher_name`,`gender`,`birth_date`,`mobile`,`email`,`position`,`education`,`graduate_school`,`hire_date`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 1, '演示数据',
+       'T2025001', '张老师', 1, '1988-05-06', '13900000001', 'zhang@school.com', '语文教师', '本科', '师范大学', '2015-09-01'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_teacher` WHERE `teacher_code`='T2025001' AND `deleted`=0);
 
--- 初始化年级数据
-INSERT INTO `school_grade` (`grade_name`, `grade_code`, `stage`, `grade_level`, `school_year`, `sort_order`, `status`) VALUES
-('一年级', 'G2024_1', 1, 1, '2024-2025', 1, 1),
-('二年级', 'G2024_2', 1, 2, '2024-2025', 2, 1),
-('三年级', 'G2024_3', 1, 3, '2024-2025', 3, 1),
-('四年级', 'G2024_4', 1, 4, '2024-2025', 4, 1),
-('五年级', 'G2024_5', 1, 5, '2024-2025', 5, 1),
-('六年级', 'G2024_6', 1, 6, '2024-2025', 6, 1);
+INSERT INTO `sys_teacher`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `teacher_code`,`teacher_name`,`gender`,`birth_date`,`mobile`,`email`,`position`,`education`,`graduate_school`,`hire_date`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 2, '演示数据',
+       'T2025002', '李老师', 2, '1990-03-16', '13900000002', 'li@school.com', '数学教师', '硕士', '师范大学', '2017-09-01'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_teacher` WHERE `teacher_code`='T2025002' AND `deleted`=0);
 
--- 初始化课程数据
-INSERT INTO `school_course` (`course_code`, `course_name`, `stage`, `course_type`, `full_score`, `pass_score`, `good_score`, `excellent_score`, `score_type`, `sort_order`, `status`) VALUES
--- 小学课程
-('PRIMARY_CHINESE', '语文', 1, 1, 100.0, 60.0, 70.0, 85.0, 1, 1, 1),
-('PRIMARY_MATH', '数学', 1, 1, 100.0, 60.0, 70.0, 85.0, 1, 2, 1),
-('PRIMARY_ENGLISH', '英语', 1, 1, 100.0, 60.0, 70.0, 85.0, 1, 3, 1),
-('PRIMARY_SCIENCE', '科学', 1, 2, 100.0, 60.0, 70.0, 85.0, 1, 4, 1),
-('PRIMARY_MORAL', '道德与法治', 1, 2, 100.0, 60.0, 70.0, 85.0, 1, 5, 1),
-('PRIMARY_PE', '体育', 1, 2, 100.0, 60.0, 70.0, 85.0, 1, 6, 1),
-('PRIMARY_MUSIC', '音乐', 1, 2, 100.0, 60.0, 70.0, 85.0, 1, 7, 1),
-('PRIMARY_ART', '美术', 1, 2, 100.0, 60.0, 70.0, 85.0, 1, 8, 1);
+INSERT INTO `sys_class`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `class_code`,`class_name`,`grade_id`,`head_teacher_id`,`student_count`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 1, '演示数据',
+       'C7-01', '七年级1班',
+       (SELECT id FROM `sys_grade` WHERE `grade_code`='G7-2025' AND `deleted`=0 LIMIT 1),
+       (SELECT id FROM `sys_teacher` WHERE `teacher_code`='T2025001' AND `deleted`=0 LIMIT 1),
+       2
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_class` WHERE `class_code`='C7-01' AND `deleted`=0);
 
--- 初始化示例教师数据
-INSERT INTO `school_teacher` (`teacher_code`, `teacher_name`, `gender`, `phone`, `email`, `hire_date`, `position`, `status`) VALUES
-('T001', '张老师', 0, '13812345678', 'zhang@school.com', '2020-09-01', '语文教师', 1),
-('T002', '李老师', 1, '13823456789', 'li@school.com', '2019-09-01', '数学教师', 1),
-('T003', '王老师', 0, '13834567890', 'wang@school.com', '2021-09-01', '英语教师', 1);
+INSERT INTO `sys_class`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `class_code`,`class_name`,`grade_id`,`head_teacher_id`,`student_count`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 2, '演示数据',
+       'C8-01', '八年级1班',
+       (SELECT id FROM `sys_grade` WHERE `grade_code`='G8-2025' AND `deleted`=0 LIMIT 1),
+       (SELECT id FROM `sys_teacher` WHERE `teacher_code`='T2025002' AND `deleted`=0 LIMIT 1),
+       1
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_class` WHERE `class_code`='C8-01' AND `deleted`=0);
 
--- 初始化示例班级数据
-INSERT INTO `school_class` (`class_name`, `class_code`, `grade_id`, `head_teacher_id`, `sort_order`, `status`) VALUES
-('一年级1班', 'C2024_1_1', 1, 1, 1, 1),
-('一年级2班', 'C2024_1_2', 1, 2, 2, 1),
-('二年级1班', 'C2024_2_1', 2, 3, 3, 1);
+INSERT INTO `sys_student`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `student_code`,`student_name`,`gender`,`birth_date`,`class_id`,`guardian_name`,`guardian_phone`,`guardian_relation`,`address`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 1, '演示数据',
+       'S2025001', '王小明', 1, '2012-04-11',
+       (SELECT id FROM `sys_class` WHERE `class_code`='C7-01' AND `deleted`=0 LIMIT 1),
+       '王建国', '13800000001', '父子', 'XX市XX区'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_student` WHERE `student_code`='S2025001' AND `deleted`=0);
 
--- 初始化示例学生数据
-INSERT INTO `school_student` (`student_code`, `student_name`, `gender`, `birth_date`, `enrollment_date`, `class_id`, `guardian_name`, `guardian_relation`, `guardian_phone`, `status`) VALUES
-('S2024001', '张小明', 1, '2018-03-15', '2024-09-01', 1, '张父', '父亲', '13900000001', 1),
-('S2024002', '李小红', 0, '2018-05-20', '2024-09-01', 1, '李母', '母亲', '13900000002', 1),
-('S2024003', '王小强', 1, '2018-07-10', '2024-09-01', 2, '王父', '父亲', '13900000003', 1);
+INSERT INTO `sys_student`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `student_code`,`student_name`,`gender`,`birth_date`,`class_id`,`guardian_name`,`guardian_phone`,`guardian_relation`,`address`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 2, '演示数据',
+       'S2025002', '李小红', 2, '2012-08-23',
+       (SELECT id FROM `sys_class` WHERE `class_code`='C7-01' AND `deleted`=0 LIMIT 1),
+       '李梅', '13800000002', '母女', 'XX市XX区'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_student` WHERE `student_code`='S2025002' AND `deleted`=0);
+
+INSERT INTO `sys_student`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `student_code`,`student_name`,`gender`,`birth_date`,`class_id`,`guardian_name`,`guardian_phone`,`guardian_relation`,`address`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 3, '演示数据',
+       'S2025003', '赵小强', 1, '2011-12-02',
+       (SELECT id FROM `sys_class` WHERE `class_code`='C8-01' AND `deleted`=0 LIMIT 1),
+       '赵强', '13800000003', '父子', 'XX市XX区'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `sys_student` WHERE `student_code`='S2025003' AND `deleted`=0);
+
+-- ----------------------------
+-- 任课关系
+-- ----------------------------
+INSERT INTO `sys_teacher_class_course`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,`teacher_id`,`class_id`,`course_id`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 1, '演示数据',
+       t.id, c.id, co.id
+FROM `sys_teacher` t, `sys_class` c, `sys_course` co
+WHERE t.teacher_code='T2025001'
+  AND c.class_code='C7-01'
+  AND co.course_code='C-CH-001'
+  AND NOT EXISTS (
+      SELECT 1 FROM `sys_teacher_class_course` x
+      WHERE x.teacher_id=t.id AND x.class_id=c.id AND x.course_id=co.id AND x.deleted=0
+  );
+
+INSERT INTO `sys_teacher_class_course`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,`teacher_id`,`class_id`,`course_id`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 2, '演示数据',
+       t.id, c.id, co.id
+FROM `sys_teacher` t, `sys_class` c, `sys_course` co
+WHERE t.teacher_code='T2025002'
+  AND c.class_code='C7-01'
+  AND co.course_code='C-MA-001'
+  AND NOT EXISTS (
+      SELECT 1 FROM `sys_teacher_class_course` x
+      WHERE x.teacher_id=t.id AND x.class_id=c.id AND x.course_id=co.id AND x.deleted=0
+  );
+
+-- ----------------------------
+-- 考试与成绩演示数据
+-- ----------------------------
+INSERT INTO `exam_info`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `exam_code`,`exam_name`,`school_year`,`semester`,`exam_type`,`start_date`,`end_date`,`grade_ids`,`course_ids`,`description`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 1, '演示数据',
+       'EX2025M01', '2025学年上学期第一次月考', '2025-2026', 1, 1, '2025-10-20', '2025-10-21',
+       (SELECT CAST(id AS CHAR) FROM `sys_grade` WHERE `grade_code`='G7-2025' AND `deleted`=0 LIMIT 1),
+       (SELECT GROUP_CONCAT(id) FROM `sys_course` WHERE `course_code` IN ('C-CH-001','C-MA-001','C-EN-001') AND `deleted`=0),
+       '七年级月考'
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `exam_info` WHERE `exam_code`='EX2025M01' AND `deleted`=0);
+
+INSERT INTO `exam_score`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `exam_id`,`student_id`,`course_id`,`score`,`absent`,`comment`,`class_rank`,`grade_rank`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 0, '演示数据',
+       e.id, s.id, c.id, 88.00, 0, '表现良好', NULL, NULL
+FROM `exam_info` e, `sys_student` s, `sys_course` c
+WHERE e.exam_code='EX2025M01'
+  AND s.student_code='S2025001'
+  AND c.course_code='C-CH-001'
+  AND NOT EXISTS (
+      SELECT 1 FROM `exam_score` x
+      WHERE x.exam_id=e.id AND x.student_id=s.id AND x.course_id=c.id AND x.deleted=0
+  );
+
+INSERT INTO `exam_score`
+(`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`status`,`sort_order`,`remark`,
+ `exam_id`,`student_id`,`course_id`,`score`,`absent`,`comment`,`class_rank`,`grade_rank`)
+SELECT NOW(), NOW(), 1, 1, 0, 1, 0, '演示数据',
+       e.id, s.id, c.id, 92.00, 0, '优秀', NULL, NULL
+FROM `exam_info` e, `sys_student` s, `sys_course` c
+WHERE e.exam_code='EX2025M01'
+  AND s.student_code='S2025002'
+  AND c.course_code='C-CH-001'
+  AND NOT EXISTS (
+      SELECT 1 FROM `exam_score` x
+      WHERE x.exam_id=e.id AND x.student_id=s.id AND x.course_id=c.id AND x.deleted=0
+  );
+
+-- ----------------------------
+-- 提示
+-- ----------------------------
+-- 1) 管理员账号建议使用后端 DataInitializer 自动创建/更新（application.yml: system.admin.*）
+-- 2) 若需重置基础数据，可先 TRUNCATE 业务表后重新执行 data.sql

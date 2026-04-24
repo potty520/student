@@ -26,7 +26,6 @@ import java.util.Optional;
  * @since 2025-08-25
  */
 @Service
-@Transactional
 public class ClassService {
 
     @Autowired
@@ -38,6 +37,7 @@ public class ClassService {
     /**
      * 分页查询班级列表
      */
+    @Transactional(readOnly = true)
     public Result<Page<SchoolClass>> getClassList(PageQuery pageQuery, String className, Long gradeId) {
         try {
             Pageable pageable = PageRequest.of(
@@ -50,7 +50,7 @@ public class ClassService {
             if (StringUtils.hasText(className) || gradeId != null) {
                 classes = classRepository.findByConditions(className, gradeId, pageable);
             } else {
-                classes = classRepository.findByDeletedFalse(pageable);
+                classes = classRepository.findByConditions(null, null, pageable);
             }
             
             return Result.success(classes);
@@ -62,9 +62,10 @@ public class ClassService {
     /**
      * 获取所有启用的班级列表
      */
+    @Transactional(readOnly = true)
     public Result<List<SchoolClass>> getAllActiveClasses() {
         try {
-            List<SchoolClass> classes = classRepository.findByStatusAndDeletedFalseOrderBySortOrderAscClassNameAsc(1);
+            List<SchoolClass> classes = classRepository.findByStatusAndDeletedOrderBySortOrder(1, 0);
             return Result.success(classes);
         } catch (Exception e) {
             return Result.error("查询班级列表失败: " + e.getMessage());
@@ -74,10 +75,11 @@ public class ClassService {
     /**
      * 根据年级ID获取班级列表
      */
+    @Transactional(readOnly = true)
     public Result<List<SchoolClass>> getClassesByGradeId(Long gradeId) {
         try {
-            List<SchoolClass> classes = classRepository.findByGradeIdAndStatusAndDeletedFalseOrderBySortOrderAsc(
-                gradeId, 1);
+            // 仅返回未删除班级（若需过滤启用状态，可在此处加 status 条件）
+            List<SchoolClass> classes = classRepository.findByGradeIdAndDeletedOrderBySortOrder(gradeId, 0);
             return Result.success(classes);
         } catch (Exception e) {
             return Result.error("查询班级列表失败: " + e.getMessage());
@@ -87,9 +89,10 @@ public class ClassService {
     /**
      * 根据ID获取班级详情
      */
+    @Transactional(readOnly = true)
     public Result<SchoolClass> getClassById(Long id) {
         try {
-            Optional<SchoolClass> schoolClass = classRepository.findByIdAndDeletedFalse(id);
+            Optional<SchoolClass> schoolClass = classRepository.findByIdAndDeleted(id, 0);
             if (schoolClass.isPresent()) {
                 return Result.success(schoolClass.get());
             } else {
@@ -103,16 +106,17 @@ public class ClassService {
     /**
      * 新增班级
      */
+    @Transactional(rollbackFor = Exception.class)
     public Result<SchoolClass> createClass(SchoolClass schoolClass) {
         try {
             // 验证班级编码是否重复
-            if (classRepository.existsByClassCodeAndDeletedFalse(schoolClass.getClassCode())) {
+            if (classRepository.existsByClassCodeAndDeleted(schoolClass.getClassCode(), 0)) {
                 return Result.error("班级编码已存在");
             }
             
             // 验证同年级同名班级是否重复
-            if (classRepository.existsByGradeIdAndClassNameAndDeletedFalse(
-                    schoolClass.getGradeId(), schoolClass.getClassName())) {
+            if (classRepository.existsByGradeIdAndClassNameAndDeleted(
+                    schoolClass.getGradeId(), schoolClass.getClassName(), 0)) {
                 return Result.error("该年级已存在同名班级");
             }
             
@@ -131,9 +135,10 @@ public class ClassService {
     /**
      * 更新班级
      */
+    @Transactional(rollbackFor = Exception.class)
     public Result<SchoolClass> updateClass(Long id, SchoolClass schoolClass) {
         try {
-            Optional<SchoolClass> existingClass = classRepository.findByIdAndDeletedFalse(id);
+            Optional<SchoolClass> existingClass = classRepository.findByIdAndDeleted(id, 0);
             if (!existingClass.isPresent()) {
                 return Result.error("班级不存在");
             }
@@ -142,7 +147,7 @@ public class ClassService {
             
             // 如果修改了班级编码，检查是否重复
             if (!classToUpdate.getClassCode().equals(schoolClass.getClassCode())) {
-                if (classRepository.existsByClassCodeAndDeletedFalse(schoolClass.getClassCode())) {
+                if (classRepository.existsByClassCodeAndDeleted(schoolClass.getClassCode(), 0)) {
                     return Result.error("班级编码已存在");
                 }
             }
@@ -150,8 +155,8 @@ public class ClassService {
             // 如果修改了年级或班级名称，检查是否重复
             if (!classToUpdate.getGradeId().equals(schoolClass.getGradeId()) || 
                 !classToUpdate.getClassName().equals(schoolClass.getClassName())) {
-                if (classRepository.existsByGradeIdAndClassNameAndDeletedFalse(
-                        schoolClass.getGradeId(), schoolClass.getClassName())) {
+                if (classRepository.existsByGradeIdAndClassNameAndDeleted(
+                        schoolClass.getGradeId(), schoolClass.getClassName(), 0)) {
                     return Result.error("该年级已存在同名班级");
                 }
             }
@@ -177,15 +182,16 @@ public class ClassService {
     /**
      * 删除班级
      */
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> deleteClass(Long id) {
         try {
-            Optional<SchoolClass> schoolClass = classRepository.findByIdAndDeletedFalse(id);
+            Optional<SchoolClass> schoolClass = classRepository.findByIdAndDeleted(id, 0);
             if (!schoolClass.isPresent()) {
                 return Result.error("班级不存在");
             }
             
             // 检查是否有关联的学生
-            long studentCount = studentRepository.countByClassIdAndStatusAndDeletedFalse(id, 1);
+            long studentCount = studentRepository.countByClassIdAndStatusAndDeleted(id, 1, 0);
             if (studentCount > 0) {
                 return Result.error("该班级下有学生，无法删除");
             }
@@ -205,6 +211,7 @@ public class ClassService {
     /**
      * 批量删除班级
      */
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> batchDeleteClasses(List<Long> ids) {
         try {
             for (Long id : ids) {
@@ -222,9 +229,10 @@ public class ClassService {
     /**
      * 更新班级状态
      */
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> updateClassStatus(Long id, Integer status) {
         try {
-            Optional<SchoolClass> schoolClass = classRepository.findByIdAndDeletedFalse(id);
+            Optional<SchoolClass> schoolClass = classRepository.findByIdAndDeleted(id, 0);
             if (!schoolClass.isPresent()) {
                 return Result.error("班级不存在");
             }
@@ -243,14 +251,15 @@ public class ClassService {
     /**
      * 更新班级学生数量
      */
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> updateStudentCount(Long classId) {
         try {
-            Optional<SchoolClass> schoolClass = classRepository.findByIdAndDeletedFalse(classId);
+            Optional<SchoolClass> schoolClass = classRepository.findByIdAndDeleted(classId, 0);
             if (!schoolClass.isPresent()) {
                 return Result.error("班级不存在");
             }
             
-            long studentCount = studentRepository.countByClassIdAndStatusAndDeletedFalse(classId, 1);
+            long studentCount = studentRepository.countByClassIdAndStatusAndDeleted(classId, 1, 0);
             
             SchoolClass classToUpdate = schoolClass.get();
             classToUpdate.setStudentCount((int) studentCount);

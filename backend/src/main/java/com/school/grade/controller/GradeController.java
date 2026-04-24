@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -23,7 +24,7 @@ import java.util.List;
  */
 @Tag(name = "年级管理", description = "年级管理相关接口")
 @RestController
-@RequestMapping("/api/basic/grade")
+@RequestMapping("/basic/grade")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class GradeController {
 
@@ -65,6 +66,7 @@ public class GradeController {
      * 新增年级
      */
     @Operation(summary = "新增年级")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:grade:add')")
     @PostMapping
     public Result<Grade> createGrade(
             @Parameter(description = "年级信息") @Valid @RequestBody Grade grade) {
@@ -75,6 +77,7 @@ public class GradeController {
      * 更新年级
      */
     @Operation(summary = "更新年级")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:grade:edit')")
     @PutMapping("/{id}")
     public Result<Grade> updateGrade(
             @Parameter(description = "年级ID") @PathVariable Long id,
@@ -86,6 +89,7 @@ public class GradeController {
      * 删除年级
      */
     @Operation(summary = "删除年级")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:grade:delete')")
     @DeleteMapping("/{id}")
     public Result<Void> deleteGrade(
             @Parameter(description = "年级ID") @PathVariable Long id) {
@@ -96,6 +100,7 @@ public class GradeController {
      * 批量删除年级
      */
     @Operation(summary = "批量删除年级")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:grade:delete')")
     @DeleteMapping("/batch")
     public Result<Void> batchDeleteGrades(
             @Parameter(description = "年级ID列表") @RequestBody List<Long> ids) {

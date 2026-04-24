@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -21,7 +22,7 @@ import java.util.List;
  */
 @Tag(name = "学生管理")
 @RestController
-@RequestMapping("/api/students")
+@RequestMapping("/students")
 @CrossOrigin(origins = "*")
 public class StudentController {
 
@@ -57,6 +58,7 @@ public class StudentController {
      * 添加学生
      */
     @Operation(summary = "添加学生")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:student:add')")
     @PostMapping
     public Result<Student> addStudent(@Parameter(description = "学生信息") @Valid @RequestBody Student student) {
         return studentService.addStudent(student);
@@ -66,6 +68,7 @@ public class StudentController {
      * 更新学生信息
      */
     @Operation(summary = "更新学生信息")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:student:edit')")
     @PutMapping("/{id}")
     public Result<Student> updateStudent(
             @Parameter(description = "学生ID") @PathVariable Long id,
@@ -78,6 +81,7 @@ public class StudentController {
      * 删除学生
      */
     @Operation(summary = "删除学生")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:student:delete')")
     @DeleteMapping("/{id}")
     public Result<Void> deleteStudent(@Parameter(description = "学生ID") @PathVariable Long id) {
         return studentService.deleteStudent(id);
@@ -87,6 +91,7 @@ public class StudentController {
      * 批量删除学生
      */
     @Operation(summary = "批量删除学生")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('*:*:*') or hasAuthority('basic:student:delete')")
     @DeleteMapping("/batch")
     public Result<Void> batchDeleteStudents(@Parameter(description = "学生ID列表") @RequestBody List<Long> ids) {
         return studentService.batchDeleteStudents(ids);

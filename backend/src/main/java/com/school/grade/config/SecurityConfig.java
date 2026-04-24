@@ -1,12 +1,18 @@
 package com.school.grade.config;
 
+import com.school.grade.repository.UserRepository;
+import com.school.grade.security.JwtAuthenticationFilter;
+import com.school.grade.security.JwtUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -23,6 +29,18 @@ import java.util.Arrays;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
+    @Value("${jwt.expiration}")
+    private long jwtExpiration;
+
+    private final UserRepository userRepository;
+
+    public SecurityConfig(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
     /**
      * 密码编码器Bean
      * 
@@ -38,12 +56,17 @@ public class SecurityConfig {
      */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        JwtUtil jwtUtil = new JwtUtil(jwtSecret, jwtExpiration);
+        JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtUtil, userRepository);
+
         http
             // 禁用CSRF保护
             .csrf().disable()
             // 配置CORS
             .cors().configurationSource(corsConfigurationSource())
             .and()
+            // JWT：无状态会话
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // 配置授权规则
             .authorizeHttpRequests(authz -> authz
                 // 允许认证相关接口无需认证
@@ -58,12 +81,9 @@ public class SecurityConfig {
             // 禁用默认登录页面
             .formLogin().disable()
             // 禁用HTTP Basic认证
-            .httpBasic().disable()
-            // 配置会话管理
-            .sessionManagement(session -> session
-                .maximumSessions(1)
-                .maxSessionsPreventsLogin(false)
-            );
+            .httpBasic().disable();
+
+        http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

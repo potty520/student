@@ -20,8 +20,11 @@ import org.springframework.util.StringUtils;
 import javax.persistence.criteria.Predicate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.regex.Pattern;
 
 /**
@@ -92,12 +95,12 @@ public class UserService {
             };
 
             Page<User> userPage = userRepository.findAll(spec, pageable);
-            
-            // 隐藏密码信息
-            userPage.getContent().forEach(user -> user.setPassword(null));
+            List<User> safeUsers = userPage.getContent().stream()
+                    .map(this::toSafeUser)
+                    .collect(Collectors.toList());
             
             PageResult<User> pageResult = new PageResult<>(
-                userPage.getContent(),
+                safeUsers,
                 userPage.getTotalElements(),
                 page,
                 size
@@ -119,10 +122,7 @@ public class UserService {
         try {
             Optional<User> user = userRepository.findByIdAndDeleted(id, 0);
             if (user.isPresent()) {
-                User userEntity = user.get();
-                // 隐藏密码信息
-                userEntity.setPassword(null);
-                return Result.success(userEntity);
+                return Result.success(toSafeUser(user.get()));
             } else {
                 return Result.error("用户信息不存在");
             }
@@ -158,11 +158,15 @@ public class UserService {
                 user.setStatus(1); // 默认启用状态
             }
 
+            // 角色ID转换为持久化实体，避免瞬时对象导致保存失败
+            Result<Set<Role>> rolesResult = resolveRoles(user.getRoles());
+            if (!rolesResult.isSuccess()) {
+                return Result.error(rolesResult.getMessage());
+            }
+            user.setRoles(rolesResult.getData());
+
             User savedUser = userRepository.save(user);
-            
-            // 隐藏密码信息
-            savedUser.setPassword(null);
-            return Result.success(savedUser);
+            return Result.success(toSafeUser(savedUser));
         } catch (Exception e) {
             return Result.error("添加用户失败：" + e.getMessage());
         }
@@ -206,11 +210,15 @@ public class UserService {
             existing.setStatus(user.getStatus());
             existing.setRemark(user.getRemark());
 
+            // 同步角色关系
+            Result<Set<Role>> rolesResult = resolveRoles(user.getRoles());
+            if (!rolesResult.isSuccess()) {
+                return Result.error(rolesResult.getMessage());
+            }
+            existing.setRoles(rolesResult.getData());
+
             User savedUser = userRepository.save(existing);
-            
-            // 隐藏密码信息
-            savedUser.setPassword(null);
-            return Result.success(savedUser);
+            return Result.success(toSafeUser(savedUser));
         } catch (Exception e) {
             return Result.error("更新用户信息失败：" + e.getMessage());
         }
@@ -515,5 +523,56 @@ public class UserService {
      */
     private boolean isValidPassword(String password) {
         return StringUtils.hasText(password) && pattern.matcher(password).matches();
+    }
+
+    /**
+     * 将前端传入的角色ID集合转换为可持久化角色实体
+     */
+    private Result<Set<Role>> resolveRoles(Set<Role> rawRoles) {
+        if (rawRoles == null || rawRoles.isEmpty()) {
+            return Result.success(new HashSet<>());
+        }
+
+        Set<Role> resolved = new HashSet<>();
+        for (Role role : rawRoles) {
+            if (role == null || role.getId() == null) {
+                return Result.error("角色信息不完整");
+            }
+            Optional<Role> roleOpt = roleRepository.findByIdAndDeleted(role.getId(), 0);
+            if (!roleOpt.isPresent()) {
+                return Result.error("角色不存在或已删除: " + role.getId());
+            }
+            resolved.add(roleOpt.get());
+        }
+        return Result.success(resolved);
+    }
+
+    /**
+     * 返回脱敏后的用户对象，避免修改JPA托管实体导致脏写回库
+     */
+    private User toSafeUser(User source) {
+        User safe = new User();
+        safe.setId(source.getId());
+        safe.setCreateTime(source.getCreateTime());
+        safe.setUpdateTime(source.getUpdateTime());
+        safe.setCreateBy(source.getCreateBy());
+        safe.setUpdateBy(source.getUpdateBy());
+        safe.setDeleted(source.getDeleted());
+        safe.setStatus(source.getStatus());
+        safe.setSortOrder(source.getSortOrder());
+        safe.setRemark(source.getRemark());
+
+        safe.setUsername(source.getUsername());
+        safe.setPassword(null);
+        safe.setRealName(source.getRealName());
+        safe.setGender(source.getGender());
+        safe.setMobile(source.getMobile());
+        safe.setEmail(source.getEmail());
+        safe.setAvatar(source.getAvatar());
+        safe.setLastLoginTime(source.getLastLoginTime());
+        safe.setLastLoginIp(source.getLastLoginIp());
+        safe.setLoginCount(source.getLoginCount());
+        safe.setRoles(source.getRoles());
+        return safe;
     }
 }

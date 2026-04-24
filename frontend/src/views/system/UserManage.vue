@@ -192,6 +192,8 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Plus } from '@element-plus/icons-vue'
+import { getActiveRoles } from '@/api/role'
+import { getUserList, createUser, updateUser, deleteUser, updateUserStatus } from '@/api/user'
 
 // 响应式数据
 const loading = ref(false)
@@ -207,41 +209,16 @@ const searchForm = reactive({
 })
 
 // 用户列表
-const userList = ref([
-  {
-    id: 1,
-    username: 'admin',
-    realName: '系统管理员',
-    email: 'admin@example.com',
-    phone: '13800138000',
-    status: 1,
-    createTime: '2024-01-01 10:00:00',
-    roles: [{ id: 1, roleName: '超级管理员' }]
-  },
-  {
-    id: 2,
-    username: 'teacher',
-    realName: '张老师',
-    email: 'teacher@example.com',
-    phone: '13800138001',
-    status: 1,
-    createTime: '2024-01-02 10:00:00',
-    roles: [{ id: 2, roleName: '教师' }]
-  }
-])
+const userList = ref([])
 
 // 角色选项
-const roleOptions = ref([
-  { id: 1, roleName: '超级管理员' },
-  { id: 2, roleName: '教师' },
-  { id: 3, roleName: '学生' }
-])
+const roleOptions = ref([])
 
 // 分页
 const pagination = reactive({
   page: 1,
   size: 10,
-  total: 2
+  total: 0
 })
 
 // 用户表单
@@ -344,9 +321,10 @@ const handleToggleStatus = async (row) => {
       }
     )
     
-    // 这里应该调用API
-    row.status = row.status === 1 ? 0 : 1
-    ElMessage.success(`${row.status === 1 ? '启用' : '禁用'}成功`)
+    const nextStatus = row.status === 1 ? 0 : 1
+    await updateUserStatus(row.id, nextStatus)
+    ElMessage.success(`${nextStatus === 1 ? '启用' : '禁用'}成功`)
+    loadUserList()
   } catch {
     // 用户取消
   }
@@ -364,13 +342,9 @@ const handleDelete = async (row) => {
       }
     )
     
-    // 这里应该调用API
-    const index = userList.value.findIndex(item => item.id === row.id)
-    if (index > -1) {
-      userList.value.splice(index, 1)
-      pagination.total--
-    }
+    await deleteUser(row.id)
     ElMessage.success('删除成功')
+    loadUserList()
   } catch {
     // 用户取消
   }
@@ -393,40 +367,28 @@ const handleSubmit = async () => {
     if (valid) {
       submitLoading.value = true
       try {
-        // 这里应该调用API
-        await new Promise(resolve => setTimeout(resolve, 1000)) // 模拟API调用
-        
+        const payload = {
+          username: userForm.username,
+          realName: userForm.realName,
+          email: userForm.email,
+          phone: userForm.phone,
+          status: userForm.status,
+          roles: (userForm.roleIds || []).map(id => ({ id }))
+        }
+
         if (isEdit.value) {
-          // 编辑
-          const index = userList.value.findIndex(item => item.id === userForm.id)
-          if (index > -1) {
-            Object.assign(userList.value[index], {
-              realName: userForm.realName,
-              email: userForm.email,
-              phone: userForm.phone,
-              status: userForm.status,
-              roles: roleOptions.value.filter(role => userForm.roleIds.includes(role.id))
-            })
-          }
+          await updateUser(userForm.id, payload)
           ElMessage.success('编辑成功')
         } else {
-          // 新增
-          const newUser = {
-            id: Date.now(),
-            username: userForm.username,
-            realName: userForm.realName,
-            email: userForm.email,
-            phone: userForm.phone,
-            status: userForm.status,
-            createTime: new Date().toLocaleString(),
-            roles: roleOptions.value.filter(role => userForm.roleIds.includes(role.id))
-          }
-          userList.value.unshift(newUser)
-          pagination.total++
+          await createUser({
+            ...payload,
+            password: userForm.password
+          })
           ElMessage.success('新增成功')
         }
         
         dialogVisible.value = false
+        loadUserList()
       } finally {
         submitLoading.value = false
       }
@@ -455,14 +417,29 @@ const resetForm = () => {
 
 const loadUserList = () => {
   loading.value = true
-  // 这里应该调用API加载用户列表
-  setTimeout(() => {
+  getUserList({
+    page: pagination.page,
+    size: pagination.size,
+    username: searchForm.username || undefined,
+    status: searchForm.status === '' ? undefined : searchForm.status
+  }).then((res) => {
+    const pageData = res.data || {}
+    userList.value = (pageData.records || []).map((item) => ({
+      ...item,
+      phone: item.phone || item.mobile || '',
+      roles: item.roles || []
+    }))
+    pagination.total = pageData.total || 0
+  }).finally(() => {
     loading.value = false
-  }, 500)
+  })
 }
 
 // 生命周期
 onMounted(() => {
+  getActiveRoles().then((res) => {
+    roleOptions.value = res.data || []
+  })
   loadUserList()
 })
 </script>

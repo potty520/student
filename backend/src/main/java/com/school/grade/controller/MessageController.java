@@ -22,7 +22,7 @@ import java.util.List;
  */
 @Tag(name = "消息管理", description = "消息发送、接收、查看等接口")
 @RestController
-@RequestMapping("/api/messages")
+@RequestMapping("/messages")
 @CrossOrigin(origins = "*")
 public class MessageController {
 

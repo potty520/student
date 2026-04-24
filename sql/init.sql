@@ -1,283 +1,420 @@
--- 学生成绩管理系统数据库初始化脚本
--- 作者: Qoder
--- 版本: 1.0.0
--- 创建时间: 2025-08-25
+-- =============================================
+-- 学生成绩管理系统 - 数据库初始化脚本
+-- 适用版本: MySQL 5.7+
+-- =============================================
 
--- 创建数据库
-CREATE DATABASE IF NOT EXISTS `student_grade_system` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+CREATE DATABASE IF NOT EXISTS `student_grade_system`
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
 
 USE `student_grade_system`;
 
--- 权限表
-DROP TABLE IF EXISTS `sys_permission`;
-CREATE TABLE `sys_permission` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `permission_code` varchar(100) NOT NULL COMMENT '权限编码',
-  `permission_name` varchar(50) NOT NULL COMMENT '权限名称',
-  `permission_type` tinyint(4) NOT NULL COMMENT '权限类型 1:菜单 2:按钮 3:接口',
-  `parent_id` bigint(20) DEFAULT NULL COMMENT '父权限ID',
-  `permission_path` varchar(200) DEFAULT NULL COMMENT '权限路径',
-  `icon` varchar(50) DEFAULT NULL COMMENT '图标',
-  `sort_order` int(11) DEFAULT '0' COMMENT '排序',
-  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态 0:禁用 1:启用',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `create_by` varchar(50) DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `update_by` varchar(50) DEFAULT NULL COMMENT '更新人',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '删除标记 0:未删除 1:已删除',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_permission_code` (`permission_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='权限表';
-
--- 角色表
-DROP TABLE IF EXISTS `sys_role`;
-CREATE TABLE `sys_role` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `role_code` varchar(50) NOT NULL COMMENT '角色编码',
-  `role_name` varchar(50) NOT NULL COMMENT '角色名称',
-  `description` varchar(200) DEFAULT NULL COMMENT '角色描述',
-  `sort_order` int(11) DEFAULT '0' COMMENT '排序',
-  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态 0:禁用 1:启用',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `create_by` varchar(50) DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `update_by` varchar(50) DEFAULT NULL COMMENT '更新人',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '删除标记 0:未删除 1:已删除',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_role_code` (`role_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色表';
-
+-- ----------------------------
 -- 用户表
-DROP TABLE IF EXISTS `sys_user`;
-CREATE TABLE `sys_user` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `username` varchar(50) NOT NULL COMMENT '用户名',
-  `password` varchar(100) NOT NULL COMMENT '密码',
-  `real_name` varchar(50) NOT NULL COMMENT '真实姓名',
-  `gender` tinyint(4) DEFAULT '1' COMMENT '性别 0:女 1:男',
-  `phone` varchar(11) DEFAULT NULL COMMENT '手机号',
-  `email` varchar(100) DEFAULT NULL COMMENT '邮箱',
-  `avatar` varchar(200) DEFAULT NULL COMMENT '头像URL',
-  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '用户状态 0:禁用 1:启用',
-  `last_login_time` datetime DEFAULT NULL COMMENT '最后登录时间',
-  `last_login_ip` varchar(50) DEFAULT NULL COMMENT '最后登录IP',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `create_by` varchar(50) DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `update_by` varchar(50) DEFAULT NULL COMMENT '更新人',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '删除标记 0:未删除 1:已删除',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `sys_user` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_time` DATETIME NULL,
+  `update_time` DATETIME NULL,
+  `create_by` BIGINT NULL,
+  `update_by` BIGINT NULL,
+  `deleted` TINYINT DEFAULT 0,
+  `status` TINYINT DEFAULT 1,
+  `sort_order` INT DEFAULT 0,
+  `remark` VARCHAR(500) NULL,
+  `username` VARCHAR(50) NOT NULL,
+  `password` VARCHAR(100) NOT NULL,
+  `real_name` VARCHAR(50) NULL,
+  `gender` INT NULL,
+  `mobile` VARCHAR(20) NULL,
+  `email` VARCHAR(100) NULL,
+  `avatar` VARCHAR(200) NULL,
+  `last_login_time` DATETIME NULL,
+  `last_login_ip` VARCHAR(50) NULL,
+  `login_count` INT DEFAULT 0,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_username` (`username`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
+  UNIQUE KEY `uk_sys_user_username` (`username`),
+  KEY `idx_sys_user_deleted_status` (`deleted`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 角色权限关联表
-DROP TABLE IF EXISTS `sys_role_permission`;
-CREATE TABLE `sys_role_permission` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `role_id` bigint(20) NOT NULL COMMENT '角色ID',
-  `permission_id` bigint(20) NOT NULL COMMENT '权限ID',
+-- ----------------------------
+-- 角色表
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `sys_role` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_time` DATETIME NULL,
+  `update_time` DATETIME NULL,
+  `create_by` BIGINT NULL,
+  `update_by` BIGINT NULL,
+  `deleted` TINYINT DEFAULT 0,
+  `status` TINYINT DEFAULT 1,
+  `sort_order` INT DEFAULT 0,
+  `remark` VARCHAR(500) NULL,
+  `role_code` VARCHAR(50) NOT NULL,
+  `role_name` VARCHAR(50) NOT NULL,
+  `description` VARCHAR(200) NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_role_permission` (`role_id`,`permission_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色权限关联表';
+  UNIQUE KEY `uk_sys_role_role_code` (`role_code`),
+  KEY `idx_sys_role_deleted_status` (`deleted`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 用户角色关联表
-DROP TABLE IF EXISTS `sys_user_role`;
-CREATE TABLE `sys_user_role` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
-  `role_id` bigint(20) NOT NULL COMMENT '角色ID',
+-- ----------------------------
+-- 权限表
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `sys_permission` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_time` DATETIME NULL,
+  `update_time` DATETIME NULL,
+  `create_by` BIGINT NULL,
+  `update_by` BIGINT NULL,
+  `deleted` TINYINT DEFAULT 0,
+  `status` TINYINT DEFAULT 1,
+  `sort_order` INT DEFAULT 0,
+  `remark` VARCHAR(500) NULL,
+  `permission_code` VARCHAR(100) NOT NULL,
+  `permission_name` VARCHAR(100) NOT NULL,
+  `permission_type` INT NOT NULL,
+  `parent_id` BIGINT NULL,
+  `path` VARCHAR(200) NULL,
+  `component` VARCHAR(200) NULL,
+  `perms` VARCHAR(100) NULL,
+  `icon` VARCHAR(50) NULL,
+  `is_frame` TINYINT DEFAULT 0,
+  `is_cache` TINYINT DEFAULT 0,
+  `description` VARCHAR(200) NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_user_role` (`user_id`,`role_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户角色关联表';
+  UNIQUE KEY `uk_sys_permission_permission_code` (`permission_code`),
+  KEY `idx_sys_permission_parent_id` (`parent_id`),
+  KEY `idx_sys_permission_deleted_status` (`deleted`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ----------------------------
+-- 用户角色关系表
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `sys_user_role` (
+  `user_id` BIGINT NOT NULL,
+  `role_id` BIGINT NOT NULL,
+  PRIMARY KEY (`user_id`, `role_id`),
+  KEY `idx_user_role_role_id` (`role_id`),
+  CONSTRAINT `fk_user_role_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `fk_user_role_role` FOREIGN KEY (`role_id`) REFERENCES `sys_role` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ----------------------------
+-- 角色权限关系表
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `sys_role_permission` (
+  `role_id` BIGINT NOT NULL,
+  `permission_id` BIGINT NOT NULL,
+  PRIMARY KEY (`role_id`, `permission_id`),
+  KEY `idx_role_permission_permission_id` (`permission_id`),
+  CONSTRAINT `fk_role_permission_role` FOREIGN KEY (`role_id`) REFERENCES `sys_role` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `fk_role_permission_permission` FOREIGN KEY (`permission_id`) REFERENCES `sys_permission` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ----------------------------
 -- 年级表
-DROP TABLE IF EXISTS `school_grade`;
-CREATE TABLE `school_grade` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `grade_name` varchar(50) NOT NULL COMMENT '年级名称',
-  `grade_code` varchar(20) NOT NULL COMMENT '年级编码',
-  `stage` tinyint(4) NOT NULL COMMENT '学段 1:小学 2:初中 3:高中',
-  `grade_level` int(11) NOT NULL COMMENT '年级序号',
-  `school_year` varchar(20) NOT NULL COMMENT '学年',
-  `sort_order` int(11) DEFAULT '0' COMMENT '排序',
-  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态 0:禁用 1:启用',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `create_by` varchar(50) DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `update_by` varchar(50) DEFAULT NULL COMMENT '更新人',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '删除标记 0:未删除 1:已删除',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `sys_grade` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_time` DATETIME NULL,
+  `update_time` DATETIME NULL,
+  `create_by` BIGINT NULL,
+  `update_by` BIGINT NULL,
+  `deleted` TINYINT DEFAULT 0,
+  `status` TINYINT DEFAULT 1,
+  `sort_order` INT DEFAULT 0,
+  `remark` VARCHAR(500) NULL,
+  `grade_code` VARCHAR(20) NOT NULL,
+  `grade_name` VARCHAR(50) NOT NULL,
+  `stage` INT NOT NULL,
+  `school_year` VARCHAR(9) NOT NULL,
+  `grade_level` INT NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_grade_code` (`grade_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='年级表';
+  UNIQUE KEY `uk_sys_grade_grade_code` (`grade_code`),
+  KEY `idx_sys_grade_deleted_status` (`deleted`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ----------------------------
 -- 教师表
-DROP TABLE IF EXISTS `school_teacher`;
-CREATE TABLE `school_teacher` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `teacher_code` varchar(20) NOT NULL COMMENT '教师工号',
-  `teacher_name` varchar(50) NOT NULL COMMENT '教师姓名',
-  `gender` tinyint(4) DEFAULT '1' COMMENT '性别 0:女 1:男',
-  `id_card` varchar(18) DEFAULT NULL COMMENT '身份证号',
-  `phone` varchar(11) DEFAULT NULL COMMENT '手机号',
-  `email` varchar(100) DEFAULT NULL COMMENT '邮箱',
-  `birth_date` date DEFAULT NULL COMMENT '出生日期',
-  `hire_date` date DEFAULT NULL COMMENT '入职日期',
-  `position` varchar(50) DEFAULT NULL COMMENT '职位',
-  `education` varchar(20) DEFAULT NULL COMMENT '学历',
-  `major` varchar(50) DEFAULT NULL COMMENT '专业',
-  `user_id` bigint(20) DEFAULT NULL COMMENT '关联用户ID',
-  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态 0:离职 1:在职',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `create_by` varchar(50) DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `update_by` varchar(50) DEFAULT NULL COMMENT '更新人',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '删除标记 0:未删除 1:已删除',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `sys_teacher` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_time` DATETIME NULL,
+  `update_time` DATETIME NULL,
+  `create_by` BIGINT NULL,
+  `update_by` BIGINT NULL,
+  `deleted` TINYINT DEFAULT 0,
+  `status` TINYINT DEFAULT 1,
+  `sort_order` INT DEFAULT 0,
+  `remark` VARCHAR(500) NULL,
+  `teacher_code` VARCHAR(20) NOT NULL,
+  `teacher_name` VARCHAR(50) NOT NULL,
+  `gender` INT NULL,
+  `birth_date` DATE NULL,
+  `id_card` VARCHAR(18) NULL,
+  `mobile` VARCHAR(20) NULL,
+  `email` VARCHAR(100) NULL,
+  `position` VARCHAR(50) NULL,
+  `education` VARCHAR(50) NULL,
+  `graduate_school` VARCHAR(100) NULL,
+  `hire_date` DATE NULL,
+  `user_id` BIGINT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_teacher_code` (`teacher_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='教师表';
+  UNIQUE KEY `uk_sys_teacher_teacher_code` (`teacher_code`),
+  UNIQUE KEY `uk_sys_teacher_id_card` (`id_card`),
+  KEY `idx_sys_teacher_user_id` (`user_id`),
+  KEY `idx_sys_teacher_deleted_status` (`deleted`, `status`),
+  CONSTRAINT `fk_sys_teacher_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ----------------------------
 -- 班级表
-DROP TABLE IF EXISTS `school_class`;
-CREATE TABLE `school_class` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `class_name` varchar(50) NOT NULL COMMENT '班级名称',
-  `class_code` varchar(20) NOT NULL COMMENT '班级编码',
-  `grade_id` bigint(20) NOT NULL COMMENT '所属年级ID',
-  `head_teacher_id` bigint(20) DEFAULT NULL COMMENT '班主任ID',
-  `student_count` int(11) DEFAULT '0' COMMENT '班级人数',
-  `sort_order` int(11) DEFAULT '0' COMMENT '排序',
-  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态 0:禁用 1:启用',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `create_by` varchar(50) DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `update_by` varchar(50) DEFAULT NULL COMMENT '更新人',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '删除标记 0:未删除 1:已删除',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `sys_class` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_time` DATETIME NULL,
+  `update_time` DATETIME NULL,
+  `create_by` BIGINT NULL,
+  `update_by` BIGINT NULL,
+  `deleted` TINYINT DEFAULT 0,
+  `status` TINYINT DEFAULT 1,
+  `sort_order` INT DEFAULT 0,
+  `remark` VARCHAR(500) NULL,
+  `class_code` VARCHAR(20) NOT NULL,
+  `class_name` VARCHAR(50) NOT NULL,
+  `grade_id` BIGINT NOT NULL,
+  `head_teacher_id` BIGINT NULL,
+  `student_count` INT DEFAULT 0,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_class_code` (`class_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='班级表';
+  UNIQUE KEY `uk_sys_class_class_code` (`class_code`),
+  KEY `idx_sys_class_grade_id` (`grade_id`),
+  KEY `idx_sys_class_head_teacher_id` (`head_teacher_id`),
+  KEY `idx_sys_class_deleted_status` (`deleted`, `status`),
+  CONSTRAINT `fk_sys_class_grade` FOREIGN KEY (`grade_id`) REFERENCES `sys_grade` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_sys_class_teacher` FOREIGN KEY (`head_teacher_id`) REFERENCES `sys_teacher` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ----------------------------
 -- 学生表
-DROP TABLE IF EXISTS `school_student`;
-CREATE TABLE `school_student` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `student_code` varchar(20) NOT NULL COMMENT '学号',
-  `student_name` varchar(50) NOT NULL COMMENT '学生姓名',
-  `gender` tinyint(4) DEFAULT '1' COMMENT '性别 0:女 1:男',
-  `id_card` varchar(18) DEFAULT NULL COMMENT '身份证号',
-  `birth_date` date DEFAULT NULL COMMENT '出生日期',
-  `enrollment_date` date DEFAULT NULL COMMENT '入学日期',
-  `class_id` bigint(20) NOT NULL COMMENT '所属班级ID',
-  `guardian_name` varchar(50) DEFAULT NULL COMMENT '监护人姓名',
-  `guardian_relation` varchar(20) DEFAULT NULL COMMENT '监护人关系',
-  `guardian_phone` varchar(11) DEFAULT NULL COMMENT '监护人电话',
-  `address` varchar(200) DEFAULT NULL COMMENT '家庭住址',
-  `user_id` bigint(20) DEFAULT NULL COMMENT '关联用户ID',
-  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态 0:休学 1:在读 2:毕业 3:转学',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `create_by` varchar(50) DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `update_by` varchar(50) DEFAULT NULL COMMENT '更新人',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '删除标记 0:未删除 1:已删除',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `sys_student` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_time` DATETIME NULL,
+  `update_time` DATETIME NULL,
+  `create_by` BIGINT NULL,
+  `update_by` BIGINT NULL,
+  `deleted` TINYINT DEFAULT 0,
+  `status` TINYINT DEFAULT 1,
+  `sort_order` INT DEFAULT 0,
+  `remark` VARCHAR(500) NULL,
+  `student_code` VARCHAR(20) NOT NULL,
+  `student_name` VARCHAR(50) NOT NULL,
+  `gender` INT NULL,
+  `birth_date` DATE NULL,
+  `id_card` VARCHAR(18) NULL,
+  `class_id` BIGINT NOT NULL,
+  `guardian_name` VARCHAR(50) NULL,
+  `guardian_phone` VARCHAR(20) NULL,
+  `guardian_relation` VARCHAR(20) NULL,
+  `address` VARCHAR(200) NULL,
+  `user_id` BIGINT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_student_code` (`student_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学生表';
+  UNIQUE KEY `uk_sys_student_student_code` (`student_code`),
+  UNIQUE KEY `uk_sys_student_id_card` (`id_card`),
+  KEY `idx_sys_student_class_id` (`class_id`),
+  KEY `idx_sys_student_user_id` (`user_id`),
+  KEY `idx_sys_student_deleted_status` (`deleted`, `status`),
+  CONSTRAINT `fk_sys_student_class` FOREIGN KEY (`class_id`) REFERENCES `sys_class` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_sys_student_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ----------------------------
 -- 课程表
-DROP TABLE IF EXISTS `school_course`;
-CREATE TABLE `school_course` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `course_code` varchar(20) NOT NULL COMMENT '课程编码',
-  `course_name` varchar(50) NOT NULL COMMENT '课程名称',
-  `stage` tinyint(4) NOT NULL COMMENT '学段 1:小学 2:初中 3:高中',
-  `course_type` tinyint(4) NOT NULL COMMENT '科目类型 1:主科 2:副科',
-  `full_score` decimal(5,1) NOT NULL COMMENT '满分分值',
-  `pass_score` decimal(5,1) DEFAULT NULL COMMENT '及格分数',
-  `good_score` decimal(5,1) DEFAULT NULL COMMENT '良好分数',
-  `excellent_score` decimal(5,1) DEFAULT NULL COMMENT '优秀分数',
-  `score_type` tinyint(4) NOT NULL COMMENT '计分方式 1:百分制 2:等级制 3:120分制',
-  `sort_order` int(11) DEFAULT '0' COMMENT '排序',
-  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态 0:禁用 1:启用',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `create_by` varchar(50) DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `update_by` varchar(50) DEFAULT NULL COMMENT '更新人',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '删除标记 0:未删除 1:已删除',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `sys_course` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_time` DATETIME NULL,
+  `update_time` DATETIME NULL,
+  `create_by` BIGINT NULL,
+  `update_by` BIGINT NULL,
+  `deleted` TINYINT DEFAULT 0,
+  `status` TINYINT DEFAULT 1,
+  `sort_order` INT DEFAULT 0,
+  `remark` VARCHAR(500) NULL,
+  `course_code` VARCHAR(20) NOT NULL,
+  `course_name` VARCHAR(50) NOT NULL,
+  `stage` INT NOT NULL,
+  `course_type` INT NOT NULL,
+  `credit` DECIMAL(3,1) NULL,
+  `full_score` DECIMAL(5,2) NULL,
+  `score_type` INT NULL,
+  `pass_score` DECIMAL(5,2) NULL,
+  `good_score` DECIMAL(5,2) NULL,
+  `excellent_score` DECIMAL(5,2) NULL,
+  `description` VARCHAR(500) NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_course_code` (`course_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='课程表';
+  UNIQUE KEY `uk_sys_course_course_code` (`course_code`),
+  KEY `idx_sys_course_deleted_status` (`deleted`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 考试表
-DROP TABLE IF EXISTS `school_exam`;
-CREATE TABLE `school_exam` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `exam_code` varchar(50) NOT NULL COMMENT '考试编码',
-  `exam_name` varchar(100) NOT NULL COMMENT '考试名称',
-  `exam_type` tinyint(4) NOT NULL COMMENT '考试类型 1:月考 2:期中考试 3:期末考试 4:模拟考试 5:其他',
-  `school_year` varchar(20) NOT NULL COMMENT '学年',
-  `semester` tinyint(4) NOT NULL COMMENT '学期 1:第一学期 2:第二学期',
-  `start_date` date NOT NULL COMMENT '考试开始日期',
-  `end_date` date NOT NULL COMMENT '考试结束日期',
-  `grade_ids` varchar(100) NOT NULL COMMENT '参考年级',
-  `course_ids` varchar(100) NOT NULL COMMENT '考试科目',
-  `description` varchar(500) DEFAULT NULL COMMENT '考试描述',
-  `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '状态 0:未开始 1:进行中 2:已结束 3:已发布',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `create_by` varchar(50) DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `update_by` varchar(50) DEFAULT NULL COMMENT '更新人',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '删除标记 0:未删除 1:已删除',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+-- ----------------------------
+-- 考试信息表
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `exam_info` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_time` DATETIME NULL,
+  `update_time` DATETIME NULL,
+  `create_by` BIGINT NULL,
+  `update_by` BIGINT NULL,
+  `deleted` TINYINT DEFAULT 0,
+  `status` TINYINT DEFAULT 1,
+  `sort_order` INT DEFAULT 0,
+  `remark` VARCHAR(500) NULL,
+  `exam_code` VARCHAR(20) NOT NULL,
+  `exam_name` VARCHAR(100) NOT NULL,
+  `school_year` VARCHAR(9) NOT NULL,
+  `semester` INT NOT NULL,
+  `exam_type` INT NOT NULL,
+  `start_date` DATE NOT NULL,
+  `end_date` DATE NOT NULL,
+  `grade_ids` VARCHAR(200) NULL,
+  `course_ids` VARCHAR(200) NULL,
+  `description` VARCHAR(500) NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_exam_code` (`exam_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='考试表';
+  UNIQUE KEY `uk_exam_info_exam_code` (`exam_code`),
+  KEY `idx_exam_info_deleted_status` (`deleted`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ----------------------------
 -- 成绩表
-DROP TABLE IF EXISTS `school_score`;
-CREATE TABLE `school_score` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `exam_id` bigint(20) NOT NULL COMMENT '考试ID',
-  `student_id` bigint(20) NOT NULL COMMENT '学生ID',
-  `course_id` bigint(20) NOT NULL COMMENT '课程ID',
-  `score` decimal(5,1) DEFAULT NULL COMMENT '分数',
-  `grade_level` varchar(10) DEFAULT NULL COMMENT '等级',
-  `class_rank` int(11) DEFAULT NULL COMMENT '班级排名',
-  `grade_rank` int(11) DEFAULT NULL COMMENT '年级排名',
-  `absent` tinyint(4) DEFAULT '0' COMMENT '是否缺考 0:正常 1:缺考',
-  `teacher_id` bigint(20) DEFAULT NULL COMMENT '录入教师ID',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `create_by` varchar(50) DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `update_by` varchar(50) DEFAULT NULL COMMENT '更新人',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '删除标记 0:未删除 1:已删除',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `exam_score` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_time` DATETIME NULL,
+  `update_time` DATETIME NULL,
+  `create_by` BIGINT NULL,
+  `update_by` BIGINT NULL,
+  `deleted` TINYINT DEFAULT 0,
+  `status` TINYINT DEFAULT 1,
+  `sort_order` INT DEFAULT 0,
+  `remark` VARCHAR(500) NULL,
+  `exam_id` BIGINT NOT NULL,
+  `student_id` BIGINT NOT NULL,
+  `course_id` BIGINT NOT NULL,
+  `score` DECIMAL(5,2) NULL,
+  `absent` TINYINT DEFAULT 0,
+  `comment` VARCHAR(200) NULL,
+  `class_rank` INT NULL,
+  `grade_rank` INT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_exam_student_course` (`exam_id`,`student_id`,`course_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='成绩表';
+  KEY `idx_exam_score_exam_id` (`exam_id`),
+  KEY `idx_exam_score_student_id` (`student_id`),
+  KEY `idx_exam_score_course_id` (`course_id`),
+  KEY `idx_exam_score_deleted_status` (`deleted`, `status`),
+  CONSTRAINT `fk_exam_score_exam` FOREIGN KEY (`exam_id`) REFERENCES `exam_info` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_exam_score_student` FOREIGN KEY (`student_id`) REFERENCES `sys_student` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_exam_score_course` FOREIGN KEY (`course_id`) REFERENCES `sys_course` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 教师任课关系表
-DROP TABLE IF EXISTS `teacher_class_course`;
-CREATE TABLE `teacher_class_course` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `teacher_id` bigint(20) NOT NULL COMMENT '教师ID',
-  `class_id` bigint(20) NOT NULL COMMENT '班级ID',
-  `course_id` bigint(20) NOT NULL COMMENT '课程ID',
-  `school_year` varchar(20) DEFAULT NULL COMMENT '学年',
-  `semester` tinyint(4) DEFAULT NULL COMMENT '学期 1:第一学期 2:第二学期',
-  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态 0:停用 1:启用',
-  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `create_by` varchar(50) DEFAULT NULL COMMENT '创建人',
-  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `update_by` varchar(50) DEFAULT NULL COMMENT '更新人',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '删除标记 0:未删除 1:已删除',
-  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+-- ----------------------------
+-- 教师班级课程关系表
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `sys_teacher_class_course` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_time` DATETIME NULL,
+  `update_time` DATETIME NULL,
+  `create_by` BIGINT NULL,
+  `update_by` BIGINT NULL,
+  `deleted` TINYINT DEFAULT 0,
+  `status` TINYINT DEFAULT 1,
+  `sort_order` INT DEFAULT 0,
+  `remark` VARCHAR(500) NULL,
+  `teacher_id` BIGINT NOT NULL,
+  `class_id` BIGINT NOT NULL,
+  `course_id` BIGINT NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_teacher_class_course` (`teacher_id`,`class_id`,`course_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='教师任课关系表';
+  UNIQUE KEY `uk_teacher_class_course` (`teacher_id`, `class_id`, `course_id`),
+  KEY `idx_tcc_class_id` (`class_id`),
+  KEY `idx_tcc_course_id` (`course_id`),
+  KEY `idx_tcc_deleted_status` (`deleted`, `status`),
+  CONSTRAINT `fk_tcc_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `sys_teacher` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_tcc_class` FOREIGN KEY (`class_id`) REFERENCES `sys_class` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_tcc_course` FOREIGN KEY (`course_id`) REFERENCES `sys_course` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ----------------------------
+-- 系统日志表
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `sys_log` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `log_type` INT NOT NULL,
+  `operation` VARCHAR(100) NULL,
+  `method` VARCHAR(100) NULL,
+  `params` LONGTEXT NULL,
+  `result` LONGTEXT NULL,
+  `ip` VARCHAR(50) NULL,
+  `user_agent` VARCHAR(500) NULL,
+  `user_id` BIGINT NULL,
+  `username` VARCHAR(50) NULL,
+  `execution_time` BIGINT NULL,
+  `status` TINYINT DEFAULT 1,
+  `create_time` DATETIME NOT NULL,
+  `remark` VARCHAR(500) NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_sys_log_create_time` (`create_time`),
+  KEY `idx_sys_log_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ----------------------------
+-- 消息通知表
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `sys_message` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `create_time` DATETIME NULL,
+  `update_time` DATETIME NULL,
+  `create_by` BIGINT NULL,
+  `update_by` BIGINT NULL,
+  `deleted` TINYINT DEFAULT 0,
+  `sort_order` INT DEFAULT 0,
+  `remark` VARCHAR(500) NULL,
+  `title` VARCHAR(200) NOT NULL,
+  `content` LONGTEXT NOT NULL,
+  `message_type` INT NOT NULL,
+  `sender_id` BIGINT NULL,
+  `sender_name` VARCHAR(50) NULL,
+  `target_type` INT NOT NULL,
+  `target_ids` VARCHAR(500) NULL,
+  `send_method` INT NOT NULL,
+  `send_time` DATETIME NULL,
+  `status` TINYINT DEFAULT 0,
+  `read_count` INT DEFAULT 0,
+  `total_count` INT DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_sys_message_sender_id` (`sender_id`),
+  KEY `idx_sys_message_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ----------------------------
+-- 消息接收表
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS `sys_message_receive` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `message_id` BIGINT NOT NULL,
+  `receiver_id` BIGINT NOT NULL,
+  `receiver_name` VARCHAR(50) NULL,
+  `is_read` TINYINT DEFAULT 0,
+  `read_time` DATETIME NULL,
+  `create_time` DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_message_receive_message_id` (`message_id`),
+  KEY `idx_message_receive_receiver_id` (`receiver_id`),
+  KEY `idx_message_receive_is_read` (`is_read`),
+  CONSTRAINT `fk_message_receive_message` FOREIGN KEY (`message_id`) REFERENCES `sys_message` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `fk_message_receive_receiver` FOREIGN KEY (`receiver_id`) REFERENCES `sys_user` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET FOREIGN_KEY_CHECKS = 1;

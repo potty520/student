@@ -314,7 +314,16 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { formatDate } from '@/utils/date'
 import { Search, Refresh, Plus, Delete } from '@element-plus/icons-vue'
-import axios from 'axios'
+import {
+  getExamList as fetchExamList,
+  createExam,
+  updateExam,
+  deleteExam,
+  batchDeleteExams,
+  startExam,
+  finishExam,
+  publishExam
+} from '@/api/exam'
 
 const userStore = useUserStore()
 
@@ -388,7 +397,7 @@ const dialogTitle = computed(() => form.id ? '编辑考试' : '新增考试')
 
 // 权限检查函数
 const hasPermission = (permission) => {
-  return true // 临时返回true，实际应该调用 userStore.hasPermission(permission)
+  return userStore.hasPermission(permission)
 }
 
 // 获取考试类型名称
@@ -447,13 +456,9 @@ const loadExamList = async () => {
       ...searchForm
     }
     
-    const response = await axios.get('/api/exams/list', { params })
-    if (response.data.success) {
-      examList.value = response.data.data.records
-      pagination.total = response.data.data.total
-    } else {
-      ElMessage.error(response.data.message || '获取考试列表失败')
-    }
+    const response = await fetchExamList(params)
+    examList.value = response.data?.records || []
+    pagination.total = response.data?.total || 0
   } catch (error) {
     console.error('获取考试列表失败:', error)
     ElMessage.error('获取考试列表失败')
@@ -512,13 +517,9 @@ const handleDelete = async (row) => {
       }
     )
     
-    const response = await axios.delete(`/api/exams/${row.id}`)
-    if (response.data.success) {
-      ElMessage.success('删除成功')
-      loadExamList()
-    } else {
-      ElMessage.error(response.data.message || '删除失败')
-    }
+    await deleteExam(row.id)
+    ElMessage.success('删除成功')
+    loadExamList()
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除考试失败:', error)
@@ -544,16 +545,10 @@ const handleBatchDelete = async () => {
       }
     )
     
-    const response = await axios.delete('/api/exams/batch', {
-      data: selectedIds.value
-    })
-    if (response.data.success) {
-      ElMessage.success('批量删除成功')
-      selectedIds.value = []
-      loadExamList()
-    } else {
-      ElMessage.error(response.data.message || '批量删除失败')
-    }
+    await batchDeleteExams(selectedIds.value)
+    ElMessage.success('批量删除成功')
+    selectedIds.value = []
+    loadExamList()
   } catch (error) {
     if (error !== 'cancel') {
       console.error('批量删除考试失败:', error)
@@ -574,13 +569,9 @@ const handleStart = async (row) => {
       }
     )
     
-    const response = await axios.put(`/api/exams/${row.id}/start`)
-    if (response.data.success) {
-      ElMessage.success('考试已开始')
-      loadExamList()
-    } else {
-      ElMessage.error(response.data.message || '开始考试失败')
-    }
+    await startExam(row.id)
+    ElMessage.success('考试已开始')
+    loadExamList()
   } catch (error) {
     if (error !== 'cancel') {
       console.error('开始考试失败:', error)
@@ -601,13 +592,9 @@ const handleFinish = async (row) => {
       }
     )
     
-    const response = await axios.put(`/api/exams/${row.id}/finish`)
-    if (response.data.success) {
-      ElMessage.success('考试已结束')
-      loadExamList()
-    } else {
-      ElMessage.error(response.data.message || '结束考试失败')
-    }
+    await finishExam(row.id)
+    ElMessage.success('考试已结束')
+    loadExamList()
   } catch (error) {
     if (error !== 'cancel') {
       console.error('结束考试失败:', error)
@@ -628,13 +615,9 @@ const handlePublish = async (row) => {
       }
     )
     
-    const response = await axios.put(`/api/exams/${row.id}/publish`)
-    if (response.data.success) {
-      ElMessage.success('成绩已发布')
-      loadExamList()
-    } else {
-      ElMessage.error(response.data.message || '发布成绩失败')
-    }
+    await publishExam(row.id)
+    ElMessage.success('成绩已发布')
+    loadExamList()
   } catch (error) {
     if (error !== 'cancel') {
       console.error('发布成绩失败:', error)
@@ -650,17 +633,14 @@ const handleSubmit = async () => {
     if (valid) {
       submitLoading.value = true
       try {
-        const url = form.id ? `/api/exams/${form.id}` : '/api/exams'
-        const method = form.id ? 'put' : 'post'
-        
-        const response = await axios[method](url, form)
-        if (response.data.success) {
-          ElMessage.success(form.id ? '更新成功' : '添加成功')
-          dialogVisible.value = false
-          loadExamList()
+        if (form.id) {
+          await updateExam(form.id, form)
         } else {
-          ElMessage.error(response.data.message || '操作失败')
+          await createExam(form)
         }
+        ElMessage.success(form.id ? '更新成功' : '添加成功')
+        dialogVisible.value = false
+        loadExamList()
       } catch (error) {
         console.error('提交考试信息失败:', error)
         ElMessage.error('操作失败')

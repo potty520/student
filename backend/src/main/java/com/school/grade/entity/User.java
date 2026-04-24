@@ -5,9 +5,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -25,35 +24,32 @@ public class User extends BaseEntity {
     /**
      * 用户名
      */
-    @NotBlank(message = "用户名不能为空")
-    @Column(name = "username", unique = true, nullable = false, length = 50)
+    @Column(name = "username", nullable = false, length = 50, unique = true)
     private String username;
 
     /**
      * 密码
      */
-    @NotBlank(message = "密码不能为空")
     @Column(name = "password", nullable = false, length = 100)
     private String password;
 
     /**
      * 真实姓名
      */
-    @NotBlank(message = "真实姓名不能为空")
-    @Column(name = "real_name", nullable = false, length = 50)
+    @Column(name = "real_name", length = 50)
     private String realName;
 
     /**
-     * 性别 0:女 1:男
+     * 性别 1:男 2:女
      */
-    @Column(name = "gender", columnDefinition = "TINYINT DEFAULT 1")
+    @Column(name = "gender")
     private Integer gender;
 
     /**
      * 手机号
      */
-    @Column(name = "phone", length = 11)
-    private String phone;
+    @Column(name = "mobile", length = 20)
+    private String mobile;
 
     /**
      * 邮箱
@@ -68,13 +64,6 @@ public class User extends BaseEntity {
     private String avatar;
 
     /**
-     * 用户状态 0:禁用 1:启用
-     */
-    @NotNull(message = "用户状态不能为空")
-    @Column(name = "status", nullable = false, columnDefinition = "TINYINT DEFAULT 1")
-    private Integer status = 1;
-
-    /**
      * 最后登录时间
      */
     @Column(name = "last_login_time")
@@ -87,7 +76,13 @@ public class User extends BaseEntity {
     private String lastLoginIp;
 
     /**
-     * 用户角色关联
+     * 登录次数
+     */
+    @Column(name = "login_count", columnDefinition = "INT DEFAULT 0")
+    private Integer loginCount = 0;
+
+    /**
+     * 关联的角色集合
      */
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -95,5 +90,16 @@ public class User extends BaseEntity {
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    private Set<Role> roles;
+    private Set<Role> roles = new HashSet<>();
+
+    /**
+     * 兼容历史业务层命名（phone <-> mobile）
+     */
+    public String getPhone() {
+        return this.mobile;
+    }
+
+    public void setPhone(String phone) {
+        this.mobile = phone;
+    }
 }

@@ -22,7 +22,7 @@ import java.util.Map;
  */
 @Tag(name = "成绩管理")
 @RestController
-@RequestMapping("/api/scores")
+@RequestMapping("/scores")
 @CrossOrigin(origins = "*")
 public class ScoreController {
 
