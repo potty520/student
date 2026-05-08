@@ -61,7 +61,7 @@ public class GradeService {
      */
     public Result<List<Grade>> getAllActiveGrades() {
         try {
-            List<Grade> grades = gradeRepository.findByStatusAndDeletedFalseOrderBySortOrderAscGradeLevelAsc(1);
+            List<Grade> grades = gradeRepository.findByStatusAndDeletedOrderBySortOrder(1, 0);
             return Result.success(grades);
         } catch (Exception e) {
             return Result.error("查询年级列表失败: " + e.getMessage());
@@ -73,7 +73,7 @@ public class GradeService {
      */
     public Result<Grade> getGradeById(Long id) {
         try {
-            Optional<Grade> grade = gradeRepository.findByIdAndDeletedFalse(id);
+            Optional<Grade> grade = gradeRepository.findByIdAndDeleted(id, 0);
             if (grade.isPresent()) {
                 return Result.success(grade.get());
             } else {
@@ -90,13 +90,13 @@ public class GradeService {
     public Result<Grade> createGrade(Grade grade) {
         try {
             // 验证年级编码是否重复
-            if (gradeRepository.existsByGradeCodeAndDeletedFalse(grade.getGradeCode())) {
+            if (gradeRepository.existsByGradeCodeAndDeleted(grade.getGradeCode(), 0)) {
                 return Result.error("年级编码已存在");
             }
             
             // 验证同学年同年级是否重复
-            if (gradeRepository.existsBySchoolYearAndGradeLevelAndDeletedFalse(
-                    grade.getSchoolYear(), grade.getGradeLevel())) {
+            if (gradeRepository.existsBySchoolYearAndGradeLevelAndDeleted(
+                    grade.getSchoolYear(), grade.getGradeLevel(), 0)) {
                 return Result.error("该学年该年级已存在");
             }
             
@@ -116,7 +116,7 @@ public class GradeService {
      */
     public Result<Grade> updateGrade(Long id, Grade grade) {
         try {
-            Optional<Grade> existingGrade = gradeRepository.findByIdAndDeletedFalse(id);
+            Optional<Grade> existingGrade = gradeRepository.findByIdAndDeleted(id, 0);
             if (!existingGrade.isPresent()) {
                 return Result.error("年级不存在");
             }
@@ -125,7 +125,7 @@ public class GradeService {
             
             // 如果修改了年级编码，检查是否重复
             if (!gradeToUpdate.getGradeCode().equals(grade.getGradeCode())) {
-                if (gradeRepository.existsByGradeCodeAndDeletedFalse(grade.getGradeCode())) {
+                if (gradeRepository.existsByGradeCodeAndDeleted(grade.getGradeCode(), 0)) {
                     return Result.error("年级编码已存在");
                 }
             }
@@ -133,12 +133,12 @@ public class GradeService {
             // 如果修改了学年或年级序号，检查是否重复
             if (!gradeToUpdate.getSchoolYear().equals(grade.getSchoolYear()) || 
                 !gradeToUpdate.getGradeLevel().equals(grade.getGradeLevel())) {
-                if (gradeRepository.existsBySchoolYearAndGradeLevelAndDeletedFalse(
-                        grade.getSchoolYear(), grade.getGradeLevel())) {
+                if (gradeRepository.existsBySchoolYearAndGradeLevelAndDeleted(
+                        grade.getSchoolYear(), grade.getGradeLevel(), 0)) {
                     return Result.error("该学年该年级已存在");
                 }
             }
-            
+
             // 更新字段
             gradeToUpdate.setGradeName(grade.getGradeName());
             gradeToUpdate.setGradeCode(grade.getGradeCode());
@@ -163,11 +163,11 @@ public class GradeService {
      */
     public Result<Void> deleteGrade(Long id) {
         try {
-            Optional<Grade> grade = gradeRepository.findByIdAndDeletedFalse(id);
+            Optional<Grade> grade = gradeRepository.findByIdAndDeleted(id, 0);
             if (!grade.isPresent()) {
                 return Result.error("年级不存在");
             }
-            
+
             // 检查是否有关联的班级
             long classCount = gradeRepository.countClassesByGradeId(id);
             if (classCount > 0) {
@@ -208,11 +208,11 @@ public class GradeService {
      */
     public Result<Void> updateGradeStatus(Long id, Integer status) {
         try {
-            Optional<Grade> grade = gradeRepository.findByIdAndDeletedFalse(id);
+            Optional<Grade> grade = gradeRepository.findByIdAndDeleted(id, 0);
             if (!grade.isPresent()) {
                 return Result.error("年级不存在");
             }
-            
+
             Grade gradeToUpdate = grade.get();
             gradeToUpdate.setStatus(status);
             gradeToUpdate.setUpdateTime(LocalDateTime.now());
@@ -229,8 +229,8 @@ public class GradeService {
      */
     public Result<List<Grade>> getGradesBySchoolYear(String schoolYear) {
         try {
-            List<Grade> grades = gradeRepository.findBySchoolYearAndStatusAndDeletedFalseOrderByGradeLevelAsc(
-                schoolYear, 1);
+            List<Grade> grades = gradeRepository.findBySchoolYearAndStatusAndDeletedOrderByGradeLevelAsc(
+                schoolYear, 1, 0);
             return Result.success(grades);
         } catch (Exception e) {
             return Result.error("查询年级列表失败: " + e.getMessage());

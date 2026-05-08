@@ -310,8 +310,8 @@ const loadGradeList = async () => {
   loading.value = true
   try {
     const params = {
-      pageNum: pagination.pageNum,
-      pageSize: pagination.pageSize,
+      page: pagination.pageNum,
+      size: pagination.pageSize,
       ...searchForm
     }
     

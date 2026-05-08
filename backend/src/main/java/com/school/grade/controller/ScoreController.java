@@ -9,8 +9,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
 
@@ -70,6 +74,32 @@ public class ScoreController {
     @PostMapping("/batch")
     public Result<List<Score>> batchAddScores(@Parameter(description = "成绩列表") @Valid @RequestBody List<Score> scores) {
         return scoreService.batchAddScores(scores);
+    }
+
+    /**
+     * 从Excel导入成绩
+     */
+    @Operation(summary = "从Excel导入成绩")
+    @PostMapping("/import/excel")
+    public Result<Map<String, Object>> importScoresFromExcel(
+            @Parameter(description = "考试ID") @RequestParam Long examId,
+            @Parameter(description = "课程ID") @RequestParam Long courseId,
+            @Parameter(description = "班级ID") @RequestParam Long classId,
+            @Parameter(description = "Excel文件") @RequestParam("file") MultipartFile file) {
+        return scoreService.importScoresFromExcel(examId, courseId, classId, file);
+    }
+
+    /**
+     * 下载成绩导入模板
+     */
+    @Operation(summary = "下载成绩导入模板")
+    @GetMapping("/import/template")
+    public void downloadTemplate(
+            @Parameter(description = "考试ID") @RequestParam Long examId,
+            @Parameter(description = "课程ID") @RequestParam Long courseId,
+            @Parameter(description = "班级ID") @RequestParam Long classId,
+            HttpServletResponse response) throws IOException {
+        scoreService.downloadTemplate(examId, courseId, classId, response);
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.school.grade.entity;
 
 import com.school.grade.common.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -9,7 +10,7 @@ import java.math.BigDecimal;
 
 /**
  * 课程实体类
- * 
+ *
  * @author Qoder
  * @version 1.0.0
  */
@@ -17,6 +18,7 @@ import java.math.BigDecimal;
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "sys_course")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Course extends BaseEntity {
 
     /**

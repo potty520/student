@@ -52,6 +52,10 @@
             <el-icon><Download /></el-icon>
             导出报表
           </el-button>
+          <el-button type="warning" @click="goToScreen">
+            <el-icon><Monitor /></el-icon>
+            大屏展示
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -242,10 +246,12 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { generateStatistics, getExamList, getCourseList } from '@/api/score'
 
 // 响应式数据
+const router = useRouter()
 const loading = ref(false)
 
 // 筛选表单
@@ -335,6 +341,11 @@ const loadStatistics = async () => {
   }
 }
 
+// 跳转大屏展示
+const goToScreen = () => {
+  router.push('/grade/screen')
+}
+
 // 导出报表
 const handleExport = () => {
   ElMessage.info('导出功能待实现')
@@ -413,7 +424,7 @@ onMounted(() => {
   Promise.all([getExamList(), getCourseList()])
     .then(([examResp, courseResp]) => {
       if (examResp.code === 200) {
-        examList.value = examResp.data?.list || []
+        examList.value = examResp.data?.records || examResp.data?.list || []
       }
       if (courseResp.code === 200) {
         courseList.value = courseResp.data || []

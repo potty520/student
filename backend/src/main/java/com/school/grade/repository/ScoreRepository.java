@@ -191,4 +191,17 @@ public interface ScoreRepository extends JpaRepository<Score, Long>, JpaSpecific
      */
     @Query("SELECT s FROM Score s JOIN s.student st WHERE s.examId = :examId AND s.courseId = :courseId AND st.classId = :classId AND s.deleted = :deleted AND st.deleted = 0 ORDER BY s.score DESC")
     List<Score> findByExamIdAndCourseIdAndClassIdAndDeleted(@Param("examId") Long examId, @Param("courseId") Long courseId, @Param("classId") Long classId, @Param("deleted") Integer deleted);
+
+    @Query("SELECT st.classId, AVG(s.score), MAX(s.score), MIN(s.score), COUNT(s) " +
+           "FROM Score s JOIN s.student st " +
+           "WHERE s.examId = :examId AND s.courseId = :courseId " +
+           "AND s.absent = 0 AND s.deleted = 0 AND st.deleted = 0 " +
+           "GROUP BY st.classId ORDER BY AVG(s.score) DESC")
+    List<Object[]> findClassScoreComparison(@Param("examId") Long examId, @Param("courseId") Long courseId);
+
+    @Query("SELECT s.examId, AVG(s.score) FROM Score s " +
+           "WHERE s.courseId = :courseId AND s.examId IN :examIds " +
+           "AND s.absent = 0 AND s.deleted = 0 " +
+           "GROUP BY s.examId")
+    List<Object[]> findAvgScoreByExams(@Param("courseId") Long courseId, @Param("examIds") List<Long> examIds);
 }

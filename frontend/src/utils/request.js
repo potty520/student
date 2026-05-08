@@ -37,18 +37,23 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   response => {
+    // Blob 响应（文件下载等）直接返回
+    if (response.config.responseType === 'blob') {
+      return response.data
+    }
+
     const res = response.data
-    
+
     // 打印响应信息（开发环境）
     if (import.meta.env.DEV) {
       console.log('收到响应:', response.config.url, res)
     }
-    
+
     // 响应成功
     if (res.code === 200) {
       return res
     }
-    
+
     // 处理业务错误
     if (res.code === 401) {
       // 未授权，跳转登录页
@@ -58,12 +63,12 @@ request.interceptors.response.use(
       router.push('/login')
       return Promise.reject(new Error(res.message || '未授权'))
     }
-    
+
     if (res.code === 403) {
       ElMessage.error('没有权限执行此操作')
       return Promise.reject(new Error(res.message || '权限不足'))
     }
-    
+
     // 其他业务错误
     ElMessage.error(res.message || '操作失败')
     return Promise.reject(new Error(res.message || '操作失败'))

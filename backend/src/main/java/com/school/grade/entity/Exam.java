@@ -1,6 +1,7 @@
 package com.school.grade.entity;
 
 import com.school.grade.common.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -9,7 +10,7 @@ import java.time.LocalDate;
 
 /**
  * 考试实体类
- * 
+ *
  * @author Qoder
  * @version 1.0.0
  */
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "exam_info")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Exam extends BaseEntity {
 
     /**

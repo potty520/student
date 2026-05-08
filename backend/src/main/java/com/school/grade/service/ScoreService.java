@@ -19,8 +19,17 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.multipart.MultipartFile;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 
 import javax.persistence.criteria.Predicate;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URLEncoder;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
@@ -182,26 +191,45 @@ public class ScoreService {
                 }
             }
 
-            // 检查重复记录
+            // 区分新增和更新：有ID的记录为更新，无ID的为新�?
+            List<Score> toSave = new ArrayList<>();
             for (Score score : scores) {
-                if (scoreRepository.existsByExamIdAndStudentIdAndCourseIdAndDeleted(
-                        score.getExamId(), score.getStudentId(), score.getCourseId(), 0)) {
-                    return Result.error("存在重复的成绩记录");
+                if (score.getId() != null) {
+                    // 更新已有记录
+                    Optional<Score> existing = scoreRepository.findByIdAndDeleted(score.getId(), 0);
+                    if (existing.isPresent()) {
+                        Score s = existing.get();
+                        s.setScore(score.getScore());
+                        s.setAbsent(score.getAbsent());
+                        s.setComment(score.getComment());
+                        toSave.add(s);
+                    }
+                } else {
+                    // 新增记录，检查是否重复
+                    if (scoreRepository.existsByExamIdAndStudentIdAndCourseIdAndDeleted(
+                            score.getExamId(), score.getStudentId(), score.getCourseId(), 0)) {
+                        continue; // 跳过已存在的记录
+                    }
+                    toSave.add(score);
                 }
             }
 
-            List<Score> savedScores = scoreRepository.saveAll(scores);
-            
+            if (toSave.isEmpty()) {
+                return Result.success(toSave);
+            }
+
+            List<Score> savedScores = scoreRepository.saveAll(toSave);
+
             // 批量计算排名
-            Set<Long> examIds = scores.stream().map(Score::getExamId).collect(Collectors.toSet());
-            Set<Long> courseIds = scores.stream().map(Score::getCourseId).collect(Collectors.toSet());
-            
+            Set<Long> examIds = toSave.stream().map(Score::getExamId).collect(Collectors.toSet());
+            Set<Long> courseIds = toSave.stream().map(Score::getCourseId).collect(Collectors.toSet());
+
             for (Long examId : examIds) {
                 for (Long courseId : courseIds) {
                     calculateRankings(examId, courseId);
                 }
             }
-            
+
             return Result.success(savedScores);
         } catch (Exception e) {
             return Result.error("批量录入成绩失败：" + e.getMessage());
@@ -209,8 +237,209 @@ public class ScoreService {
     }
 
     /**
+     * 从Excel导入成绩
+     */
+    public Result<Map<String, Object>> importScoresFromExcel(Long examId, Long courseId, Long classId, MultipartFile file) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            if (file.isEmpty()) {
+                return Result.error("上传文件不能为空");
+            }
+
+            String filename = file.getOriginalFilename();
+            Workbook workbook;
+            if (filename != null && filename.endsWith(".xls")) {
+                workbook = new HSSFWorkbook(file.getInputStream());
+            } else {
+                workbook = new XSSFWorkbook(file.getInputStream());
+            }
+
+            Sheet sheet = workbook.getSheetAt(0);
+            if (sheet.getLastRowNum() < 1) {
+                workbook.close();
+                return Result.error("Excel文件无数据");
+            }
+
+            // 读取表头
+            Row headerRow = sheet.getRow(0);
+            Map<String, Integer> colMap = new HashMap<>();
+            for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                Cell cell = headerRow.getCell(i);
+                if (cell != null) {
+                    String val = cell.getStringCellValue().trim();
+                    colMap.put(val, i);
+                }
+            }
+
+            Integer codeCol = colMap.get("学号");
+            Integer nameCol = colMap.get("姓名");
+            Integer scoreCol = colMap.get("成绩");
+            if (codeCol == null) {
+                workbook.close();
+                return Result.error("Excel缺少'学号'列");
+            }
+
+            List<Score> scores = new ArrayList<>();
+            List<Map<String, String>> errors = new ArrayList<>();
+            int successCount = 0;
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+
+                String studentCode = getCellString(row, codeCol);
+                if (studentCode == null || studentCode.isEmpty()) continue;
+
+                // 通过学号查找学生
+                Optional<Student> studentOpt = studentRepository.findByStudentCodeAndDeleted(studentCode, 0);
+                if (!studentOpt.isPresent()) {
+                    Map<String, String> err = new HashMap<>();
+                    err.put("row", String.valueOf(i + 1));
+                    err.put("info", "学号" + studentCode + "不存在");
+                    errors.add(err);
+                    continue;
+                }
+                Student student = studentOpt.get();
+
+                Score score = new Score();
+                score.setExamId(examId);
+                score.setStudentId(student.getId());
+                score.setCourseId(courseId);
+
+                // 解析成绩
+                if (scoreCol != null) {
+                    String scoreStr = getCellString(row, scoreCol);
+                    if (scoreStr != null && !scoreStr.isEmpty() && !scoreStr.contains("缺考")) {
+                        try {
+                            score.setScore(new BigDecimal(scoreStr.trim()));
+                            score.setAbsent(0);
+                        } catch (NumberFormatException e) {
+                            Map<String, String> err = new HashMap<>();
+                            err.put("row", String.valueOf(i + 1));
+                            err.put("info", "成绩格式错误: " + scoreStr);
+                            errors.add(err);
+                            continue;
+                        }
+                    } else {
+                        score.setScore(null);
+                        score.setAbsent(1);
+                    }
+                }
+
+                // 解析备注
+                Integer remarkCol = colMap.get("备注");
+                if (remarkCol != null) {
+                    String remark = getCellString(row, remarkCol);
+                    if (remark != null && !remark.isEmpty()) {
+                        score.setComment(remark);
+                    }
+                }
+
+                scores.add(score);
+                successCount++;
+            }
+
+            workbook.close();
+
+            // 保存成绩
+            if (!scores.isEmpty()) {
+                Result<List<Score>> saveResult = batchAddScores(scores);
+                if (!saveResult.isSuccess()) {
+                    return Result.error(saveResult.getMessage());
+                }
+            }
+
+            result.put("total", scores.size() + errors.size());
+            result.put("successCount", successCount);
+            result.put("errorCount", errors.size());
+            result.put("errors", errors);
+            return Result.success(result);
+        } catch (Exception e) {
+            return Result.error("Excel导入失败: " + e.getMessage());
+        }
+    }
+
+    private String getCellString(Row row, int colIndex) {
+        Cell cell = row.getCell(colIndex);
+        if (cell == null) return null;
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue().trim();
+            case NUMERIC:
+                double d = cell.getNumericCellValue();
+                if (d == Math.floor(d) && !Double.isInfinite(d)) {
+                    return String.valueOf((long) d);
+                }
+                return String.valueOf(d);
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                try {
+                    return String.valueOf(cell.getNumericCellValue());
+                } catch (Exception e) {
+                    return cell.getStringCellValue().trim();
+                }
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * 下载成绩导入模板
+     */
+    public void downloadTemplate(Long examId, Long courseId, Long classId, HttpServletResponse response) throws IOException {
+        List<Student> students = studentRepository.findByClassIdAndDeleted(classId, 0);
+        Course course = courseRepository.findByIdAndDeleted(courseId, 0).orElse(null);
+        Exam exam = examRepository.findByIdAndDeleted(examId, 0).orElse(null);
+
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("成绩导入");
+
+        // 表头
+        Row header = sheet.createRow(0);
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerStyle.setFont(headerFont);
+        headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        String[] headers = {"学号", "姓名", "成绩", "备注"};
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = header.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+
+        // 数据行
+        for (int i = 0; i < students.size(); i++) {
+            Student s = students.get(i);
+            Row row = sheet.createRow(i + 1);
+            row.createCell(0).setCellValue(s.getStudentCode());
+            row.createCell(1).setCellValue(s.getStudentName());
+            row.createCell(2).setCellValue("");
+            row.createCell(3).setCellValue("");
+        }
+
+        for (int i = 0; i < 4; i++) sheet.autoSizeColumn(i);
+
+        String filename = "成绩导入模板";
+        if (exam != null) filename += "_" + exam.getExamName();
+        if (course != null) filename += "_" + course.getCourseName();
+        filename += ".xlsx";
+
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(filename, "UTF-8").replace("+", "%20"));
+
+        OutputStream os = response.getOutputStream();
+        workbook.write(os);
+        workbook.close();
+        os.flush();
+    }
+
+    /**
      * 更新成绩信息
-     * 
+     *
      * @param score 成绩信息
      * @return 操作结果
      */

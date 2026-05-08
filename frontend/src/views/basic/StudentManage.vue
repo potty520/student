@@ -32,12 +32,7 @@
             clearable
             style="width: 150px"
           >
-            <el-option label="一年级1班" value="一年级1班" />
-            <el-option label="一年级2班" value="一年级2班" />
-            <el-option label="二年级1班" value="二年级1班" />
-            <el-option label="二年级2班" value="二年级2班" />
-            <el-option label="三年级1班" value="三年级1班" />
-            <el-option label="三年级2班" value="三年级2班" />
+            <el-option v-for="c in classOptions" :key="c.id" :label="c.className" :value="c.className" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -91,13 +86,13 @@
         <el-table-column prop="studentCode" label="学号" width="120" />
         <el-table-column prop="gender" label="性别" width="80">
           <template #default="scope">
-            <el-tag :type="scope.row.gender === '男' ? 'primary' : 'danger'">{{ scope.row.gender }}</el-tag>
+            <el-tag :type="scope.row.gender === 1 ? '' : 'danger'">{{ scope.row.gender === 1 ? '男' : '女' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="birthDate" label="出生日期" width="120" />
-        <el-table-column prop="className" label="班级" width="120">
+        <el-table-column prop="schoolClass.className" label="班级" width="120">
           <template #default="scope">
-            <el-tag type="success">{{ scope.row.className }}</el-tag>
+            <el-tag type="success">{{ scope.row.schoolClass?.className }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="phone" label="联系电话" width="130" />
@@ -143,8 +138,8 @@
       <!-- 分页 -->
       <div class="pagination-container">
         <el-pagination
-          v-model:current-page="pagination.pageNum"
-          v-model:page-size="pagination.pageSize"
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.size"
           :total="pagination.total"
           :page-sizes="[10, 20, 50, 100]"
           background
@@ -184,8 +179,8 @@
           <el-col :span="12">
             <el-form-item label="性别" prop="gender">
               <el-select v-model="form.gender" placeholder="请选择性别" style="width: 100%">
-                <el-option label="男" value="男" />
-                <el-option label="女" value="女" />
+                <el-option label="男" :value="1" />
+                <el-option label="女" :value="2" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -203,13 +198,8 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="班级" prop="className">
-              <el-select v-model="form.className" placeholder="请选择班级" style="width: 100%">
-                <el-option label="一年级1班" value="一年级1班" />
-                <el-option label="一年级2班" value="一年级2班" />
-                <el-option label="二年级1班" value="二年级1班" />
-                <el-option label="二年级2班" value="二年级2班" />
-                <el-option label="三年级1班" value="三年级1班" />
-                <el-option label="三年级2班" value="三年级2班" />
+              <el-select v-model="form.classId" placeholder="请选择班级" style="width: 100%">
+                <el-option v-for="c in classOptions" :key="c.id" :label="c.className" :value="c.id" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -262,6 +252,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { formatDate } from '@/utils/date'
 import { Search, Refresh, Plus, Delete } from '@element-plus/icons-vue'
+import { getStudentList, createStudent, updateStudent, deleteStudent, batchDeleteStudents, updateStudentStatus } from '@/api/student'
+import { getAllClasses } from '@/api/class'
 
 const userStore = useUserStore()
 
@@ -282,19 +274,22 @@ const searchForm = reactive({
 
 // 分页数据
 const pagination = reactive({
-  pageNum: 1,
-  pageSize: 10,
+  page: 1,
+  size: 10,
   total: 0
 })
+
+// 班级选项
+const classOptions = ref([])
 
 // 表单数据
 const form = reactive({
   id: null,
   studentName: '',
   studentCode: '',
-  gender: '男',
+  gender: 1,
   birthDate: '',
-  className: '',
+  classId: '',
   phone: '',
   parentName: '',
   parentPhone: '',
@@ -316,7 +311,7 @@ const rules = {
   gender: [
     { required: true, message: '请选择性别', trigger: 'change' }
   ],
-  className: [
+  classId: [
     { required: true, message: '请选择班级', trigger: 'change' }
   ],
   parentName: [
@@ -339,102 +334,30 @@ const hasPermission = (permission) => {
   return userStore.hasPermission(permission)
 }
 
-// 模拟数据
-const mockStudents = [
-  {
-    id: 1,
-    studentName: '张小明',
-    studentCode: 'S001',
-    gender: '男',
-    birthDate: '2010-05-15',
-    className: '一年级1班',
-    phone: '13800138001',
-    parentName: '张父',
-    parentPhone: '13900139001',
-    address: '北京市朝阳区某某小区',
-    status: 1,
-    remark: '学习认真',
-    createTime: '2024-01-15 10:30:00'
-  },
-  {
-    id: 2,
-    studentName: '李小红',
-    studentCode: 'S002',
-    gender: '女',
-    birthDate: '2010-08-20',
-    className: '一年级1班',
-    phone: '13800138002',
-    parentName: '李母',
-    parentPhone: '13900139002',
-    address: '北京市海淀区某某小区',
-    status: 1,
-    remark: '活泼开朗',
-    createTime: '2024-01-16 14:20:00'
-  },
-  {
-    id: 3,
-    studentName: '王小华',
-    studentCode: 'S003',
-    gender: '男',
-    birthDate: '2009-12-08',
-    className: '二年级1班',
-    phone: '13800138003',
-    parentName: '王父',
-    parentPhone: '13900139003',
-    address: '北京市西城区某某小区',
-    status: 1,
-    remark: '数学成绩优秀',
-    createTime: '2024-01-17 09:15:00'
-  },
-  {
-    id: 4,
-    studentName: '刘小美',
-    studentCode: 'S004',
-    gender: '女',
-    birthDate: '2009-03-25',
-    className: '二年级2班',
-    phone: '13800138004',
-    parentName: '刘母',
-    parentPhone: '13900139004',
-    address: '北京市东城区某某小区',
-    status: 1,
-    remark: '语文成绩突出',
-    createTime: '2024-01-18 11:45:00'
-  }
-]
-
 // 方法
+const loadClassOptions = async () => {
+  try {
+    const res = await getAllClasses()
+    if (res.code === 200) classOptions.value = res.data
+  } catch (e) { /* ignore */ }
+}
+
 const loadStudentList = async () => {
   loading.value = true
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    let filteredData = [...mockStudents]
-    
-    // 模拟搜索过滤
-    if (searchForm.studentName) {
-      filteredData = filteredData.filter(item => 
-        item.studentName.includes(searchForm.studentName)
-      )
+    const params = {
+      page: pagination.page,
+      size: pagination.size,
+      studentName: searchForm.studentName || undefined,
+      studentCode: searchForm.studentCode || undefined
     }
-    if (searchForm.studentCode) {
-      filteredData = filteredData.filter(item => 
-        item.studentCode.includes(searchForm.studentCode)
-      )
+    const res = await getStudentList(params)
+    if (res.code === 200) {
+      studentList.value = res.data.records || []
+      pagination.total = res.data.total || 0
+    } else {
+      ElMessage.error(res.message || '获取学生列表失败')
     }
-    if (searchForm.className) {
-      filteredData = filteredData.filter(item => 
-        item.className === searchForm.className
-      )
-    }
-    
-    // 模拟分页
-    const start = (pagination.pageNum - 1) * pagination.pageSize
-    const end = start + pagination.pageSize
-    studentList.value = filteredData.slice(start, end)
-    pagination.total = filteredData.length
-    
   } catch (error) {
     ElMessage.error('获取学生列表失败')
   } finally {
@@ -444,7 +367,7 @@ const loadStudentList = async () => {
 
 // 搜索
 const handleSearch = () => {
-  pagination.pageNum = 1
+  pagination.page = 1
   loadStudentList()
 }
 
@@ -464,7 +387,20 @@ const handleAdd = () => {
 
 // 编辑
 const handleEdit = (row) => {
-  Object.assign(form, row)
+  Object.assign(form, {
+    id: row.id,
+    studentName: row.studentName,
+    studentCode: row.studentCode,
+    gender: row.gender,
+    birthDate: row.birthDate,
+    classId: row.classId || '',
+    phone: row.phone,
+    parentName: row.parentName,
+    parentPhone: row.parentPhone,
+    address: row.address,
+    status: row.status,
+    remark: row.remark
+  })
   dialogVisible.value = true
 }
 
@@ -476,18 +412,15 @@ const handleDelete = async (row) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
-    // 模拟删除操作
-    const index = mockStudents.findIndex(item => item.id === row.id)
-    if (index > -1) {
-      mockStudents.splice(index, 1)
+    const res = await deleteStudent(row.id)
+    if (res.code === 200) {
       ElMessage.success('删除成功')
       loadStudentList()
+    } else {
+      ElMessage.error(res.message || '删除失败')
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
+    if (error !== 'cancel') ElMessage.error('删除失败')
   }
 }
 
@@ -499,34 +432,31 @@ const handleBatchDelete = async () => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
-    // 模拟批量删除
-    selectedIds.value.forEach(id => {
-      const index = mockStudents.findIndex(item => item.id === id)
-      if (index > -1) {
-        mockStudents.splice(index, 1)
-      }
-    })
-    
-    ElMessage.success('批量删除成功')
-    selectedIds.value = []
-    loadStudentList()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('批量删除失败')
+    const res = await batchDeleteStudents(selectedIds.value)
+    if (res.code === 200) {
+      ElMessage.success('批量删除成功')
+      selectedIds.value = []
+      loadStudentList()
+    } else {
+      ElMessage.error(res.message || '批量删除失败')
     }
+  } catch (error) {
+    if (error !== 'cancel') ElMessage.error('批量删除失败')
   }
 }
 
 // 状态变更
 const handleStatusChange = async (row) => {
   try {
-    // 模拟状态更新
-    await new Promise(resolve => setTimeout(resolve, 200))
-    ElMessage.success('状态更新成功')
+    const res = await updateStudentStatus(row.id, row.status)
+    if (res.code !== 200) {
+      ElMessage.error(res.message || '状态更新失败')
+      row.status = row.status === 1 ? 0 : 1
+    } else {
+      ElMessage.success('状态更新成功')
+    }
   } catch (error) {
     ElMessage.error('状态更新失败')
-    // 恢复原状态
     row.status = row.status === 1 ? 0 : 1
   }
 }
@@ -538,14 +468,14 @@ const handleSelectionChange = (selection) => {
 
 // 分页大小变更
 const handleSizeChange = (size) => {
-  pagination.pageSize = size
-  pagination.pageNum = 1
+  pagination.size = size
+  pagination.page = 1
   loadStudentList()
 }
 
 // 分页变更
 const handleCurrentChange = (page) => {
-  pagination.pageNum = page
+  pagination.page = page
   loadStudentList()
 }
 
@@ -553,36 +483,17 @@ const handleCurrentChange = (page) => {
 const handleSubmit = async () => {
   try {
     await formRef.value.validate()
-    
     submitLoading.value = true
-    
-    // 模拟提交
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    if (form.id) {
-      // 更新
-      const index = mockStudents.findIndex(item => item.id === form.id)
-      if (index > -1) {
-        mockStudents[index] = { ...form, createTime: mockStudents[index].createTime }
-      }
-      ElMessage.success('更新成功')
+    const res = form.id ? await updateStudent(form.id, form) : await createStudent(form)
+    if (res.code === 200) {
+      ElMessage.success(form.id ? '更新成功' : '新增成功')
+      dialogVisible.value = false
+      loadStudentList()
     } else {
-      // 新增
-      const newStudent = {
-        ...form,
-        id: Date.now(),
-        createTime: new Date().toLocaleString()
-      }
-      mockStudents.unshift(newStudent)
-      ElMessage.success('新增成功')
+      ElMessage.error(res.message || '操作失败')
     }
-    
-    dialogVisible.value = false
-    loadStudentList()
   } catch (error) {
-    if (error !== false) {
-      ElMessage.error('操作失败')
-    }
+    if (error !== false) ElMessage.error('操作失败')
   } finally {
     submitLoading.value = false
   }
@@ -594,9 +505,9 @@ const resetForm = () => {
     id: null,
     studentName: '',
     studentCode: '',
-    gender: '男',
+    gender: 1,
     birthDate: '',
-    className: '',
+    classId: '',
     phone: '',
     parentName: '',
     parentPhone: '',
@@ -604,14 +515,12 @@ const resetForm = () => {
     status: 1,
     remark: ''
   })
-  
-  if (formRef.value) {
-    formRef.value.clearValidate()
-  }
+  if (formRef.value) formRef.value.clearValidate()
 }
 
 // 页面加载
 onMounted(() => {
+  loadClassOptions()
   loadStudentList()
 })
 </script>

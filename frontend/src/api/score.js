@@ -143,6 +143,30 @@ export function getStudentsByClass(classId) {
 }
 
 /**
+ * 从Excel导入成绩
+ */
+export function importScoresExcel(formData) {
+  return request({
+    url: '/scores/import/excel',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+/**
+ * 下载成绩导入模板
+ */
+export function downloadScoreTemplate(examId, classId, courseId) {
+  return request({
+    url: '/scores/import/template',
+    method: 'get',
+    params: { examId, classId, courseId },
+    responseType: 'blob'
+  })
+}
+
+/**
  * 获取考试课程下的成绩列表
  */
 export function getScoresByExamAndCourse(examId, courseId) {

@@ -14,9 +14,9 @@ spring:
   # 数据库配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:64.83.43.205}:${DB_PORT:3306}/${DB_NAME:student_grade_system}?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME:zhaokai}
-    password: ${DB_PASSWORD:zkzj102426@123}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:student_grade_system}?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:student_app}
+    password: ${DB_PASSWORD:student123}
     hikari:
       connection-timeout: 30000
       idle-timeout: 600000

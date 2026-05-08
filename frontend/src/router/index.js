@@ -18,6 +18,7 @@ const CourseManage = () => import('@/views/basic/CourseManage.vue')
 const ExamManage = () => import('@/views/grade/ExamManage.vue')
 const ScoreEntry = () => import('@/views/grade/ScoreEntry.vue')
 const ScoreStatistics = () => import('@/views/grade/ScoreStatistics.vue')
+const ScreenDisplay = () => import('@/views/grade/ScreenDisplay.vue')
 
 // 系统管理
 const UserManage = () => import('@/views/system/UserManage.vue')
@@ -90,6 +91,12 @@ const routes = [
         name: 'ScoreStatistics',
         component: ScoreStatistics,
         meta: { title: '成绩统计', icon: 'PieChart', parent: '成绩管理' }
+      },
+      {
+        path: 'grade/screen',
+        name: 'ScreenDisplay',
+        component: ScreenDisplay,
+        meta: { title: '数据大屏', icon: 'Monitor', parent: '成绩管理' }
       },
       {
         path: 'system/user',

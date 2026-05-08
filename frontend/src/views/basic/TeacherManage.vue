@@ -94,10 +94,10 @@
         <el-table-column prop="teacherCode" label="工号" width="120" />
         <el-table-column prop="gender" label="性别" width="80">
           <template #default="scope">
-            <el-tag :type="scope.row.gender === '男' ? 'primary' : 'danger'">{{ scope.row.gender }}</el-tag>
+            <el-tag :type="scope.row.gender === 1 ? '' : 'danger'">{{ scope.row.gender === 1 ? '男' : '女' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="phone" label="联系电话" width="130" />
+        <el-table-column prop="mobile" label="联系电话" width="130" />
         <el-table-column prop="email" label="邮箱" width="180" />
         <el-table-column prop="subject" label="任教科目" width="100">
           <template #default="scope">
@@ -145,8 +145,8 @@
       <!-- 分页 -->
       <div class="pagination-container">
         <el-pagination
-          v-model:current-page="pagination.pageNum"
-          v-model:page-size="pagination.pageSize"
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.size"
           :total="pagination.total"
           :page-sizes="[10, 20, 50, 100]"
           background
@@ -186,8 +186,8 @@
           <el-col :span="12">
             <el-form-item label="性别" prop="gender">
               <el-select v-model="form.gender" placeholder="请选择性别" style="width: 100%">
-                <el-option label="男" value="男" />
-                <el-option label="女" value="女" />
+                <el-option label="男" :value="1" />
+                <el-option label="女" :value="2" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -204,8 +204,8 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="联系电话" prop="phone">
-              <el-input v-model="form.phone" placeholder="请输入联系电话" />
+            <el-form-item label="联系电话" prop="mobile">
+              <el-input v-model="form.mobile" placeholder="请输入联系电话" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -273,6 +273,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { formatDate } from '@/utils/date'
 import { Search, Refresh, Plus, Delete } from '@element-plus/icons-vue'
+import { getTeacherList, createTeacher, updateTeacher, deleteTeacher, batchDeleteTeachers, updateTeacherStatus } from '@/api/teacher'
 
 const userStore = useUserStore()
 
@@ -293,8 +294,8 @@ const searchForm = reactive({
 
 // 分页数据
 const pagination = reactive({
-  pageNum: 1,
-  pageSize: 10,
+  page: 1,
+  size: 10,
   total: 0
 })
 
@@ -303,9 +304,9 @@ const form = reactive({
   id: null,
   teacherName: '',
   teacherCode: '',
-  gender: '男',
+  gender: 1,
   birthDate: '',
-  phone: '',
+  mobile: '',
   email: '',
   subject: '',
   title: '',
@@ -327,7 +328,7 @@ const rules = {
   gender: [
     { required: true, message: '请选择性别', trigger: 'change' }
   ],
-  phone: [
+  mobile: [
     { required: true, message: '请输入联系电话', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
   ],
@@ -350,87 +351,23 @@ const hasPermission = (permission) => {
   return userStore.hasPermission(permission)
 }
 
-// 模拟数据
-const mockTeachers = [
-  {
-    id: 1,
-    teacherName: '张老师',
-    teacherCode: 'T001',
-    gender: '女',
-    birthDate: '1985-03-15',
-    phone: '13800138001',
-    email: 'zhang@school.com',
-    subject: '语文',
-    title: '讲师',
-    address: '北京市朝阳区',
-    status: 1,
-    remark: '优秀教师',
-    createTime: '2024-01-15 10:30:00'
-  },
-  {
-    id: 2,
-    teacherName: '李老师',
-    teacherCode: 'T002',
-    gender: '男',
-    birthDate: '1980-07-20',
-    phone: '13800138002',
-    email: 'li@school.com',
-    subject: '数学',
-    title: '副教授',
-    address: '北京市海淀区',
-    status: 1,
-    remark: '数学竞赛指导老师',
-    createTime: '2024-01-16 14:20:00'
-  },
-  {
-    id: 3,
-    teacherName: '王老师',
-    teacherCode: 'T003',
-    gender: '女',
-    birthDate: '1990-12-08',
-    phone: '13800138003',
-    email: 'wang@school.com',
-    subject: '英语',
-    title: '助教',
-    address: '北京市西城区',
-    status: 1,
-    remark: '英语口语专家',
-    createTime: '2024-01-17 09:15:00'
-  }
-]
-
 // 方法
 const loadTeacherList = async () => {
   loading.value = true
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    let filteredData = [...mockTeachers]
-    
-    // 模拟搜索过滤
-    if (searchForm.teacherName) {
-      filteredData = filteredData.filter(item => 
-        item.teacherName.includes(searchForm.teacherName)
-      )
+    const params = {
+      page: pagination.page,
+      size: pagination.size,
+      teacherName: searchForm.teacherName || undefined,
+      teacherCode: searchForm.teacherCode || undefined
     }
-    if (searchForm.teacherCode) {
-      filteredData = filteredData.filter(item => 
-        item.teacherCode.includes(searchForm.teacherCode)
-      )
+    const res = await getTeacherList(params)
+    if (res.code === 200) {
+      teacherList.value = res.data.records || []
+      pagination.total = res.data.total || 0
+    } else {
+      ElMessage.error(res.message || '获取教师列表失败')
     }
-    if (searchForm.subject) {
-      filteredData = filteredData.filter(item => 
-        item.subject === searchForm.subject
-      )
-    }
-    
-    // 模拟分页
-    const start = (pagination.pageNum - 1) * pagination.pageSize
-    const end = start + pagination.pageSize
-    teacherList.value = filteredData.slice(start, end)
-    pagination.total = filteredData.length
-    
   } catch (error) {
     ElMessage.error('获取教师列表失败')
   } finally {
@@ -440,7 +377,7 @@ const loadTeacherList = async () => {
 
 // 搜索
 const handleSearch = () => {
-  pagination.pageNum = 1
+  pagination.page = 1
   loadTeacherList()
 }
 
@@ -460,69 +397,55 @@ const handleAdd = () => {
 
 // 编辑
 const handleEdit = (row) => {
-  Object.assign(form, row)
+  Object.assign(form, {
+    id: row.id,
+    teacherName: row.teacherName,
+    teacherCode: row.teacherCode,
+    gender: row.gender,
+    birthDate: row.birthDate,
+    mobile: row.mobile,
+    email: row.email,
+    subject: row.subject || '',
+    title: row.title || '',
+    address: row.address || '',
+    status: row.status,
+    remark: row.remark
+  })
   dialogVisible.value = true
 }
 
 // 删除
 const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm('确定要删除该教师吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
-    // 模拟删除操作
-    const index = mockTeachers.findIndex(item => item.id === row.id)
-    if (index > -1) {
-      mockTeachers.splice(index, 1)
-      ElMessage.success('删除成功')
-      loadTeacherList()
-    }
+    await ElMessageBox.confirm('确定要删除该教师吗？', '提示', { type: 'warning' })
+    const res = await deleteTeacher(row.id)
+    if (res.code === 200) { ElMessage.success('删除成功'); loadTeacherList() }
+    else ElMessage.error(res.message || '删除失败')
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
+    if (error !== 'cancel') ElMessage.error('删除失败')
   }
 }
 
 // 批量删除
 const handleBatchDelete = async () => {
   try {
-    await ElMessageBox.confirm(`确定要删除选中的${selectedIds.value.length}个教师吗？`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
-    // 模拟批量删除
-    selectedIds.value.forEach(id => {
-      const index = mockTeachers.findIndex(item => item.id === id)
-      if (index > -1) {
-        mockTeachers.splice(index, 1)
-      }
-    })
-    
-    ElMessage.success('批量删除成功')
-    selectedIds.value = []
-    loadTeacherList()
+    await ElMessageBox.confirm(`确定要删除选中的${selectedIds.value.length}个教师吗？`, '提示', { type: 'warning' })
+    const res = await batchDeleteTeachers(selectedIds.value)
+    if (res.code === 200) { ElMessage.success('批量删除成功'); selectedIds.value = []; loadTeacherList() }
+    else ElMessage.error(res.message || '批量删除失败')
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('批量删除失败')
-    }
+    if (error !== 'cancel') ElMessage.error('批量删除失败')
   }
 }
 
 // 状态变更
 const handleStatusChange = async (row) => {
   try {
-    // 模拟状态更新
-    await new Promise(resolve => setTimeout(resolve, 200))
-    ElMessage.success('状态更新成功')
+    const res = await updateTeacherStatus(row.id, row.status)
+    if (res.code !== 200) { ElMessage.error(res.message || '状态更新失败'); row.status = row.status === 1 ? 0 : 1 }
+    else ElMessage.success('状态更新成功')
   } catch (error) {
     ElMessage.error('状态更新失败')
-    // 恢复原状态
     row.status = row.status === 1 ? 0 : 1
   }
 }
@@ -534,14 +457,14 @@ const handleSelectionChange = (selection) => {
 
 // 分页大小变更
 const handleSizeChange = (size) => {
-  pagination.pageSize = size
-  pagination.pageNum = 1
+  pagination.size = size
+  pagination.page = 1
   loadTeacherList()
 }
 
 // 分页变更
 const handleCurrentChange = (page) => {
-  pagination.pageNum = page
+  pagination.page = page
   loadTeacherList()
 }
 
@@ -549,36 +472,12 @@ const handleCurrentChange = (page) => {
 const handleSubmit = async () => {
   try {
     await formRef.value.validate()
-    
     submitLoading.value = true
-    
-    // 模拟提交
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    if (form.id) {
-      // 更新
-      const index = mockTeachers.findIndex(item => item.id === form.id)
-      if (index > -1) {
-        mockTeachers[index] = { ...form, createTime: mockTeachers[index].createTime }
-      }
-      ElMessage.success('更新成功')
-    } else {
-      // 新增
-      const newTeacher = {
-        ...form,
-        id: Date.now(),
-        createTime: new Date().toLocaleString()
-      }
-      mockTeachers.unshift(newTeacher)
-      ElMessage.success('新增成功')
-    }
-    
-    dialogVisible.value = false
-    loadTeacherList()
+    const res = form.id ? await updateTeacher(form.id, form) : await createTeacher(form)
+    if (res.code === 200) { ElMessage.success(form.id ? '更新成功' : '新增成功'); dialogVisible.value = false; loadTeacherList() }
+    else ElMessage.error(res.message || '操作失败')
   } catch (error) {
-    if (error !== false) {
-      ElMessage.error('操作失败')
-    }
+    if (error !== false) ElMessage.error('操作失败')
   } finally {
     submitLoading.value = false
   }
@@ -587,23 +486,10 @@ const handleSubmit = async () => {
 // 重置表单
 const resetForm = () => {
   Object.assign(form, {
-    id: null,
-    teacherName: '',
-    teacherCode: '',
-    gender: '男',
-    birthDate: '',
-    phone: '',
-    email: '',
-    subject: '',
-    title: '',
-    address: '',
-    status: 1,
-    remark: ''
+    id: null, teacherName: '', teacherCode: '', gender: 1, birthDate: '',
+    mobile: '', email: '', subject: '', title: '', address: '', status: 1, remark: ''
   })
-  
-  if (formRef.value) {
-    formRef.value.clearValidate()
-  }
+  if (formRef.value) formRef.value.clearValidate()
 }
 
 // 页面加载

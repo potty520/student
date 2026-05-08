@@ -127,7 +127,8 @@ import {
   UserFilled,
   Reading,
   Edit,
-  PieChart
+  PieChart,
+  Monitor
 } from '@element-plus/icons-vue'
 
 const route = useRoute()

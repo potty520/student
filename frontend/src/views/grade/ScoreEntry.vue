@@ -106,7 +106,7 @@
             <el-input-number
               v-model="scope.row.score"
               :min="0"
-              :max="100"
+              :max="courseInfo?.fullScore || 100"
               :precision="1"
               size="small"
               placeholder="请输入成绩"
@@ -221,7 +221,9 @@ import {
   getClassList,
   getCourseList,
   getStudentsByClass,
-  getScoresByExamAndCourse
+  getScoresByExamAndCourse,
+  importScoresExcel,
+  downloadScoreTemplate
 } from '@/api/score'
 
 const userStore = useUserStore()
@@ -282,10 +284,11 @@ const averageScore = computed(() => {
 const passRate = computed(() => {
   const validScores = studentList.value
     .filter(student => !student.absent && student.score !== null)
-  
+
   if (validScores.length === 0) return 0
-  
-  const passCount = validScores.filter(student => student.score >= 60).length
+
+  const passLine = courseInfo.value?.passScore || 60
+  const passCount = validScores.filter(student => student.score >= passLine).length
   return (passCount / validScores.length) * 100
 })
 
@@ -436,30 +439,66 @@ const handleFileChange = (file) => {
 }
 
 // 下载模板
-const downloadTemplate = () => {
-  // 这里实现下载模板的逻辑
-  ElMessage.info('模板下载功能待实现')
+const downloadTemplate = async () => {
+  if (!selectionForm.examId || !selectionForm.classId || !selectionForm.courseId) {
+    ElMessage.warning('请先选择考试、班级和科目')
+    return
+  }
+  try {
+    const response = await downloadScoreTemplate(
+      selectionForm.examId,
+      selectionForm.classId,
+      selectionForm.courseId
+    )
+    const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = '成绩导入模板.xlsx'
+    link.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('模板下载成功')
+  } catch (error) {
+    ElMessage.error('模板下载失败')
+  }
 }
 
 // 确认导入
-const handleImportConfirm = () => {
+const handleImportConfirm = async () => {
   if (!selectedFile.value) {
     ElMessage.warning('请先选择文件')
     return
   }
-  
+
   importLoading.value = true
-  
-  // 这里实现文件解析和导入逻辑
-  setTimeout(() => {
-    ElMessage.success('导入成功')
-    importDialogVisible.value = false
+  try {
+    const formData = new FormData()
+    formData.append('examId', selectionForm.examId)
+    formData.append('courseId', selectionForm.courseId)
+    formData.append('classId', selectionForm.classId)
+    formData.append('file', selectedFile.value.raw)
+
+    const response = await importScoresExcel(formData)
+    if (response.code === 200) {
+      const data = response.data || {}
+      const msg = `导入完成：成功 ${data.successCount || 0} 条`
+      if (data.errorCount > 0) {
+        ElMessage.warning(msg + `，失败 ${data.errorCount} 条`)
+      } else {
+        ElMessage.success(msg)
+      }
+      importDialogVisible.value = false
+      selectedFile.value = null
+      // 重新加载数据
+      loadScoreTemplate()
+    } else {
+      ElMessage.error(response.message || '导入失败')
+    }
+  } catch (error) {
+    ElMessage.error('导入失败：网络错误')
+  } finally {
     importLoading.value = false
-    selectedFile.value = null
-    
-    // 重新加载数据
-    loadScoreTemplate()
-  }, 2000)
+  }
 }
 
 // 页面加载
@@ -467,7 +506,7 @@ onMounted(() => {
   Promise.all([getExamList(), getClassList(), getCourseList()])
     .then(([examResp, classResp, courseResp]) => {
       if (examResp.code === 200) {
-        examList.value = examResp.data?.list || []
+        examList.value = examResp.data?.records || examResp.data?.list || []
       }
       if (classResp.code === 200) {
         classList.value = classResp.data || []
