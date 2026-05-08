@@ -7,6 +7,7 @@ import com.school.grade.repository.UserRepository;
 import com.school.grade.service.UserService;
 import com.school.grade.common.result.Result;
 import com.school.grade.security.JwtUtil;
+import com.school.grade.security.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,6 +36,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/auth")
 @CrossOrigin(origins = "*")
 public class AuthController {
+
+    private static final RateLimiter loginRateLimiter = RateLimiter.loginRateLimiter();
 
     @Autowired
     private UserService userService;
@@ -67,17 +70,25 @@ public class AuthController {
         if (password == null || password.trim().isEmpty()) {
             return Result.error("密码不能为空");
         }
-        
+
+        // 登录频率限制：检查IP
+        String loginIp = getClientIpAddress(request);
+        if (!loginRateLimiter.tryAcquire(loginIp)) {
+            return Result.error("登录尝试过于频繁，请稍后再试");
+        }
+
         // 验证用户登录
         Result<User> loginResult = userService.validateLogin(username, password);
         if (!loginResult.isSuccess()) {
             return Result.error(loginResult.getMessage());
         }
+
+        // 登录成功，清除频率限制
+        loginRateLimiter.reset(loginIp);
         
         User user = loginResult.getData();
         
         // 更新最后登录信息
-        String loginIp = getClientIpAddress(request);
         userService.updateLastLogin(user.getId(), loginIp);
 
         // 重新查询：带角色与权限

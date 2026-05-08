@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
   servlet:
     context-path: /api
     encoding:
@@ -10,7 +10,10 @@ server:
 spring:
   application:
     name: grade-management-system
-  
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
   # 数据库配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -23,25 +26,25 @@ spring:
       max-lifetime: 1800000
       maximum-pool-size: 20
       minimum-idle: 5
-      
+
   # JPA配置
   jpa:
     hibernate:
       ddl-auto: update
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.MySQL57Dialect
-        
+
   # 文件上传配置
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 50MB
-      
+
   # Jackson配置
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
@@ -51,10 +54,9 @@ spring:
 # 日志配置
 logging:
   level:
-    com.school.grade: DEBUG
-    org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.school.grade: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
   pattern:
     console: '%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n'
     file: '%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n'
@@ -63,10 +65,10 @@ logging:
 
 # JWT配置
 jwt:
-  secret: gradeManagementSecretKey2024
-  expiration: 86400000 # 24小时
+  secret: ${JWT_SECRET}
+  expiration: 86400000
   header: Authorization
-  prefix: Bearer 
+  prefix: Bearer
 
 # 系统配置
 system:
@@ -74,6 +76,10 @@ system:
   version: 1.0.0
   description: 中小学学生成绩管理系统
   admin:
-    username: admin
-    password: admin123
-    email: admin@school.com
+    username: ${ADMIN_USERNAME:admin}
+    password: ${ADMIN_PASSWORD}
+    email: ${ADMIN_EMAIL:admin@school.com}
+
+# CORS配置
+cors:
+  allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}

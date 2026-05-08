@@ -18,10 +18,11 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Spring Security配置类
- * 
+ *
  * @author Qoder
  * @version 1.0.0
  */
@@ -35,52 +36,39 @@ public class SecurityConfig {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
+    @Value("${cors.allowed-origins:http://localhost:5173}")
+    private String allowedOrigins;
+
     private final UserRepository userRepository;
 
     public SecurityConfig(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
-    /**
-     * 密码编码器Bean
-     * 
-     * @return BCryptPasswordEncoder实例
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * 安全过滤器链配置
-     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         JwtUtil jwtUtil = new JwtUtil(jwtSecret, jwtExpiration);
         JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtUtil, userRepository);
 
         http
-            // 禁用CSRF保护
+            // JWT是无状态的，不需要CSRF保护
             .csrf().disable()
-            // 配置CORS
             .cors().configurationSource(corsConfigurationSource())
             .and()
-            // JWT：无状态会话
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // 配置授权规则
             .authorizeHttpRequests(authz -> authz
-                // 允许认证相关接口无需认证
                 .antMatchers("/auth/**").permitAll()
-                // 允许Swagger相关接口
+                // Swagger仅开发环境开放，生产环境需认证
                 .antMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                // 允许静态资源
                 .antMatchers("/static/**", "/public/**").permitAll()
-                // 其他请求需要认证
                 .anyRequest().authenticated()
             )
-            // 禁用默认登录页面
             .formLogin().disable()
-            // 禁用HTTP Basic认证
             .httpBasic().disable();
 
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -88,17 +76,19 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * CORS配置
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(Arrays.asList(
+            "Authorization", "Content-Type", "X-Requested-With", "Accept"
+        ));
         configuration.setAllowCredentials(true);
-        
+        configuration.setMaxAge(3600L);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

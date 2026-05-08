@@ -1,0 +1,13 @@
+# 生产环境配置
+spring:
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+logging:
+  level:
+    com.school.grade: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
